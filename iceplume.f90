@@ -56,7 +56,7 @@ PROGRAM iceplume
 ! zw
 !
   open(unit=5, file='./data/iceplume_zw.txt')
-  DO K = 1, Nr+1
+  DO K = 0, Nr
     read(5, *)  PLUME(ng) % zW(K)
   ENDDO
   close(unit=5)
@@ -125,10 +125,7 @@ PROGRAM iceplume
 !
   write(*, *)  'Call ICEPLUME main function'
 !
-  CALL iceplume_calc(ng, &
-                   & Qbar, &
-                   & Qt, &
-                   & Qs)
+  CALL iceplume_calc(ng, Qbar, Qt, Qs)
 !
 ! ==================================================================
 ! Write to file
@@ -139,7 +136,7 @@ PROGRAM iceplume
   open(unit=15, file='./data/plume_out_zw.txt')
   write(15, '(A3, 99 A12)')  'lev', 'zW', &
     & 't', 's', 'r', 'w', 'a', 'mInt', 'volFlux'
-  DO K = 1, Nr+1
+  DO K = 0, Nr
     write(15, '(I4, 99 E12.4)')  K, PLUME(ng) % zW(K), &
       & PLUME(ng) % t(K), PLUME(ng) % s(K), &
       & PLUME(ng) % r(K), PLUME(ng) % w(K), &
@@ -152,7 +149,7 @@ PROGRAM iceplume
     & 'tAm', 'sAm', 'vAm', 'wAm', 'ent', 'det', &
     & 'fwFlux', 'heatFlux'
   DO K = 1, Nr
-    write(15, '(I4, 99 E12.4)')  K, PLUME(ng) % zRho(K), &
+    write(15, '(I4, 99 E12.4)')  K, PLUME(ng) % zR(K), &
       & PLUME(ng) % tAm(K), PLUME(ng) % sAm(K), &
       & PLUME(ng) % vAm(K), PLUME(ng) % wAm(K), &
       & PLUME(ng) % ent(K), PLUME(ng) % det(K), &
