@@ -41,7 +41,7 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 ! and velocity profiles for that column
 !
   DO K = 1, Nr
-      PLUME(ng) % dz(K) = PLUME(ng) % zW(K+1) - PLUME(ng) % zW(K)
+      PLUME(ng) % dz(K) = PLUME(ng) % zW(K) - PLUME(ng) % zW(K-1)
   ENDDO
 !
 ! If discharge input salinity is less or equal than zero, set it to
@@ -119,7 +119,7 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
       PLUME(ng) % det(K) = 0.0d0
     ENDDO
 !
-    DO K = iceDepthK, Nr
+    DO K = iceDepthK+1, Nr
       PLUME(ng) % ent(K) = &
         & -(PLUME(ng) % volFlux(K) - PLUME(ng) % volFlux(K-1))
     ENDDO
@@ -132,7 +132,7 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
       negSum = 0.d0
       posSum = 0.d0
 !
-      DO K = iceDepthK,Nr
+      DO K = iceDepthK+1, Nr
         IF ( PLUME(ng) % ent(K) .LT. 0 ) THEN
           negSum = PLUME(ng) % ent(K) + negSum
         ELSE
@@ -151,7 +151,7 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 !
 ! Separate entrainment / detrainment
 !
-    DO K = iceDepthK,Nr
+    DO K = iceDepthK+1, Nr
       IF (PLUME(ng) % ent(K) .GT. 0.d0) THEN
         PLUME(ng) % det(K) = PLUME(ng) % ent(K)
         PLUME(ng) % ent(K) = 0.d0
@@ -243,13 +243,13 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 !
 ! Write the active tracer (T & S) concentration to PLUME (ng) % trc
 !
-      PLUME(ng) % trc(isalt) = &
-        & 0.5*(PLUME(ng) % s(plumeDepthK) + &
-        &      PLUME(ng) % s(plumeDepthK+1))
-      PLUME(ng) % trc(itemp) = &
-        & 0.5*(PLUME(ng) % t(plumeDepthK) + &
-        &      PLUME(ng) % t(plumeDepthK+1))
-
+    PLUME(ng) % trc(isalt) = &
+      & 0.5*(PLUME(ng) % s(plumeDepthK-1) + &
+      &      PLUME(ng) % s(plumeDepthK))
+    PLUME(ng) % trc(itemp) = &
+      & 0.5*(PLUME(ng) % t(plumeDepthK-1) + &
+      &      PLUME(ng) % t(plumeDepthK))
+!
     IF (useTracers) THEN
 !
 ! If use passive tracers, calculate passive tracer concentrations
@@ -267,7 +267,7 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 !
 ! Add up total sum of each tracer in plume
 !
-      DO K = iceDepthK, Nr
+      DO K = iceDepthK+1, Nr
         IF (PLUME(ng) % ent(K) .LT. 0.) THEN
           DO iTracer = 3, NTr
             PLUME(ng) % trcCum(iTracer) = &
@@ -314,7 +314,7 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
       plumeAreaInCell = 0.d0
       IF ((QIni .NE. 0) .AND. (useConePlume .OR. useSheetPlume)) THEN
         plumeAreaInCell = PLUME(ng) % a(K) - PLUME(ng) % a(K-1)
-
+!
         IF (plumeAreaInCell .GT. 0.0) THEN
           PLUME(ng) % m(K) = &
             & (PLUME(ng) % mInt(K) - &
@@ -340,8 +340,8 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 !
       IF (useBkgMelt) THEN
 !
-        meanVel = ((PLUME(ng) % vAm(K))**2.d0 + &
-                 & (PLUME(ng) % wAm(K))**2.d0)**0.5d0
+        meanVel = ((PLUME(ng) % vAm(K))**2 + &
+                 & (PLUME(ng) % wAm(K))**2)**0.5d0
         depth = 0.5d0*(PLUME(ng) % zW(K-1) + PLUME(ng) % zW(K))
         CALL ICEPLUME_MELTRATE(PLUME(ng) % tAm(K), &
                              & PLUME(ng) % sAm(K), &
@@ -393,7 +393,7 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
             & (dy*(PLUME(ng) % dz(K)))
           PLUME(ng) % mAm(K) = 0.d0
         ENDIF
-      ELSE  ! not coneplume or sheet plume
+      ELSE
 !
 ! If it is not a plume cell, then no plume melting.
 !
@@ -416,7 +416,7 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 !
 ! Check if above ice depth
 !
-      IF (K .LT. iceDepthK) THEN
+      IF (K .LE. iceDepthK) THEN
 !
 ! Below the ice depth, there is no heat and freshwater flux
 !
@@ -439,7 +439,8 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 !
         plumeAreaInCell = PLUME(ng) % a(K) - PLUME(ng) % a(K-1)
         IF ((plumeAreaInCell .GT. 0) .AND. (correctMeltEnt)) THEN
-            PLUME(ng) % fwFlux(K) = (PLUME(ng) % fwFlux(K))*(1-meltEnt)
+            PLUME(ng) % fwFlux(K) = &
+              & (PLUME(ng) % fwFlux(K))*(1-meltEnt)
         ENDIF
 !
 ! Compute tendencies (as for pkg/icefront in MITgcm)
@@ -512,12 +513,27 @@ SUBROUTINE ICEPLUME_CURVE_DET(ng, detr, detrDz)
 ! Calculate Brunt-Vaisala frequency
 !
         K = plumeDepthK
-        rhoUp = RHO(0.5*(PLUME(ng) % tAm(K+1)+PLUME(ng) % tAm(K)), &
-                  & 0.5*(PLUME(ng) % sAm(K+1)+PLUME(ng) % sAm(K)), &
-                  & PLUME(ng) % zW(K+1))
-        rhoDown = RHO(0.5*(PLUME(ng) % tAm(K-1)+PLUME(ng) % tAm(K)), &
-                    & 0.5*(PLUME(ng) % sAm(K-1)+PLUME(ng) % sAm(K)), &
+        IF (K .EQ. Nr) THEN
+          rhoUp = RHO(PLUME(ng) % tAm(K), &
+                    & PLUME(ng) % sAm(K), &
                     & PLUME(ng) % zW(K))
+        ELSE
+          rhoUp = RHO(0.5*(PLUME(ng) % tAm(K+1)+PLUME(ng) % tAm(K)), &
+                    & 0.5*(PLUME(ng) % sAm(K+1)+PLUME(ng) % sAm(K)), &
+                    & PLUME(ng) % zW(K))
+        ENDIF
+!
+        IF (K .EQ. 1) THEN
+          rhoDown = RHO(PLUME(ng) % tAm(1), &
+                      & PLUME(ng) % sAm(1), &
+                      & PLUME(ng) % zW(0))
+        ELSE
+          rhoDown = RHO(0.5*(PLUME(ng) % tAm(K-1) + &
+                           & PLUME(ng) % tAm(K)), &
+                      & 0.5*(PLUME(ng) % sAm(K-1) + &
+                           & PLUME(ng) % sAm(K)), &
+                      & PLUME(ng) % zW(K-1))
+        ENDIF
         rho0 = 0.5*(rhoUp + rhoDown)
         bvf = -g*(rhoUp-rhoDown)/(PLUME(ng) % dz(K)*rho0)
         minDetrDz2 = (detr**2*RiBmin/bvf/(dy**2))**0.25
