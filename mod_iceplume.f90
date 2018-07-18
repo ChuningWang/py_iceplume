@@ -21,7 +21,7 @@ MODULE mod_iceplume
   logical :: useConePlume        = .true.
   logical :: useSheetPlume       = .false.
   logical :: conserveMass        = .false.
-  logical :: useBkgMelt          = .true.
+  logical :: useBkgMelt          = .false.
   logical :: correctMeltEnt      = .false.
   logical :: useTracers          = .true.
   logical :: useInputTracers     = .true.
@@ -203,6 +203,9 @@ MODULE mod_iceplume
     real(r8), pointer :: trc(:)
     real(r8), pointer :: trcCum(:)
     real(r8), pointer :: trcIni(:)
+!
+    real(r8), pointer :: rhoAm(:)
+    real(r8), pointer :: rho(:)
   END TYPE T_PLUME
 !
   TYPE (T_PLUME), allocatable :: PLUME(:)
@@ -250,5 +253,8 @@ MODULE mod_iceplume
         allocate(PLUME(ng) % trc(NT(ng)))
         allocate(PLUME(ng) % trcCum(NT(ng)))
         allocate(PLUME(ng) % trcIni(NT(ng)))
+!
+        allocate(PLUME(ng) % rhoAm(N(ng)))
+        allocate(PLUME(ng) % rho(0:N(ng)))
     END SUBROUTINE allocate_iceplume
 END

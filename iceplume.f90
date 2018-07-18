@@ -131,29 +131,40 @@ PROGRAM iceplume
 ! Write to file
 ! ==================================================================
 !
+  DO K = 1, Nr
+    PLUME(ng) % rhoAm(K) = RHO(PLUME(ng) % tAm(K), &
+                             & PLUME(ng) % sAm(K), &
+                             & PLUME(ng) % zR(K)) - 1000.d0
+  ENDDO
+  DO K = 0, Nr
+    PLUME(ng) % rho(K) = RHO(PLUME(ng) % t(K), &
+                           & PLUME(ng) % s(K), &
+                           & PLUME(ng) % zW(K)) - 1000.d0
+  ENDDO
   write(*, *)  'Write output to files'
 !
   open(unit=15, file='./data/plume_out_zw.txt')
   write(15, '(A3, 99 A12)')  'lev', 'zW', &
-    & 't', 's', 'r', 'w', 'a', 'mInt', 'volFlux'
+    & 't', 's', 'r', 'w', 'a', 'mInt', 'volFlux', 'rho'
   DO K = 0, Nr
     write(15, '(I4, 99 E12.4)')  K, PLUME(ng) % zW(K), &
       & PLUME(ng) % t(K), PLUME(ng) % s(K), &
       & PLUME(ng) % r(K), PLUME(ng) % w(K), &
       & PLUME(ng) % a(K), PLUME(ng) % mInt(K), &
-      & PLUME(ng) % volFlux(K)
+      & PLUME(ng) % volFlux(K), PLUME(ng) % rho(K)
   ENDDO
   close(unit=15)
   open(unit=15, file='./data/plume_out_zr.txt')
   write(15, '(A3, 99 A12)')  'lev', 'zR', &
     & 'tAm', 'sAm', 'vAm', 'wAm', 'ent', 'det', &
-    & 'fwFlux', 'heatFlux'
+    & 'fwFlux', 'heatFlux', 'rhoAm'
   DO K = 1, Nr
     write(15, '(I4, 99 E12.4)')  K, PLUME(ng) % zR(K), &
       & PLUME(ng) % tAm(K), PLUME(ng) % sAm(K), &
       & PLUME(ng) % vAm(K), PLUME(ng) % wAm(K), &
       & PLUME(ng) % ent(K), PLUME(ng) % det(K), &
-      & PLUME(ng) % fwFlux(K), PLUME(ng) % heatFlux(K)
+      & PLUME(ng) % fwFlux(K), PLUME(ng) % heatFlux(K), &
+      & PLUME(ng) % rhoAm(K)
   ENDDO
   close(unit=15)
 END PROGRAM

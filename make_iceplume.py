@@ -1,4 +1,5 @@
 import subprocess
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy import io
 import csv
@@ -32,6 +33,8 @@ zw = np.array([0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 90,
 
 zw = -zw[::-1]
 zr = 0.5*(zw[1:] + zw[:-1])
+dz = np.diff(zw)
+dy = 200
 
 # ------------ load profiles -------------------------------------------
 data = io.loadmat('./carroll_2017_JGR_oceans_initialTS.mat')
@@ -65,6 +68,36 @@ data_zw = np.loadtxt('./data/plume_out_zw.txt', skiprows=1)
 
 data = {}
 for (i, header) in enumerate(header_zr):
-    data[header] = data_zr[:, i]
+    data[header.decode('utf-8')] = data_zr[:, i]
 for (i, header) in enumerate(header_zw):
-    data[header] = data_zw[:, i]
+    data[header.decode('utf-8')] = data_zw[:, i]
+
+msk = data['s']==0
+data['s'][msk] = np.NaN
+data['t'][msk] = np.NaN
+data['rho'][msk] = np.NaN
+
+# data['ent'][data['ent']==0] = np.NaN
+# data['det'][data['det']==0] = np.NaN
+
+fig, axs = plt.subplots(1, 3)
+axs[0].set_ylim([-800, 0])
+axs[1].set_ylim([-800, 0])
+axs[2].set_ylim([-800, 0])
+axs0 = axs[0].twiny()
+axs[1].set_yticklabels([''])
+axs[2].set_yticklabels([''])
+axs[2].plot([0, 0], [-800, 0], '--', color='grey')
+axs[0].set_xlabel(r'Salt [PSU]', color='b')
+axs0.set_xlabel(r'Temp [$^{\circ}$C]', color='r')
+axs[1].set_xlabel(r'$\rho$ Anomaly [kg$\cdot$m$^{-3}$]')
+axs[2].set_xlabel(r'Ent/Det Vel [m$\cdot$s$^{-1}$]')
+
+axs[0].plot(data['s'], zw, '-b')
+axs[0].plot(data['sAm'], zr, '--.b')
+axs0.plot(data['t'], zw, '-r')
+axs0.plot(data['tAm'], zr, '--.r')
+axs[1].plot(data['rho'], zw, '-k')
+axs[1].plot(data['rhoAm'], zr, '--.k')
+axs[2].plot(data['ent']/dz/dy, zr, '-.k')
+axs[2].plot(data['det']/dz/dy, zr, '-.k')

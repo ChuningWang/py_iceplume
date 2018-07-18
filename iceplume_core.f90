@@ -85,6 +85,7 @@ SUBROUTINE iceplume_plume_model(ng, rIni, tIni, sIni)
     PLUME(ng) % s(K) = 0.0
     PLUME(ng) % a(K) = 0.0
     PLUME(ng) % mInt(K) = 0.0
+    PLUME(ng) % rho(K) = 0.0
   ENDDO
   DO K = 1, Nr
     PLUME(ng) % zR(K) = 0.5d0 * (PLUME(ng) % zW(K-1) + &
@@ -97,10 +98,6 @@ SUBROUTINE iceplume_plume_model(ng, rIni, tIni, sIni)
 ! Start at bottom of ice face
 !
   zIn = PLUME(ng) % zW(iceDepthK)
-!
-! Replicate current depth
-!
-  depth = zIn
 !
 ! Next point at which to retrieve values
 !
@@ -120,6 +117,10 @@ SUBROUTINE iceplume_plume_model(ng, rIni, tIni, sIni)
 ! ==================================================================
 !
   DO K = iceDepthK+1, Nr
+!
+! Replicate current depth
+!
+  depth = zIn
 !
 ! ==================================================================
 ! Use DLSODE to solve plume properties.
@@ -170,6 +171,7 @@ SUBROUTINE iceplume_plume_model(ng, rIni, tIni, sIni)
         sAmbient = .5*(PLUME(ng) % sAm(K) + PLUME(ng) % sAm(K+1))
       ENDIF
       rhoAmbient = RHO(tAmbient, sAmbient, depth)
+      write(*, *)  K, depth, rhoAmbient, rhoPlume
 !
       IF ((rhoPlume .GT. rhoAmbient) .OR. &
         & (K .EQ. Nr)) THEN
@@ -376,7 +378,7 @@ SUBROUTINE  HALFCONE (NEQ, T, Y, YDOT)
 ! Differential equations
 ! Plume radius
 !
-  YDOT(1) = 2.*E_0+4.*mdot/(pi*Y(2))- &
+  YDOT(1) = 2.*E_0+4.*mdot/(pi*Y(2)) - &
           & Y(1)*g*(rho_0-rho_1)/(2.*Y(2)*Y(2)*rho_ref)+2.*Cd/pi
 !
 ! Plume vertical velocity

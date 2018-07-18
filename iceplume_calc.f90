@@ -41,7 +41,7 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 ! and velocity profiles for that column
 !
   DO K = 1, Nr
-      PLUME(ng) % dz(K) = PLUME(ng) % zW(K+1) - PLUME(ng) % zW(K)
+      PLUME(ng) % dz(K) = PLUME(ng) % zW(K) - PLUME(ng) % zW(K-1)
   ENDDO
 !
 ! If discharge input salinity is less or equal than zero, set it to
@@ -635,6 +635,7 @@ SUBROUTINE ICEPLUME_CURVE_DET(ng, detr, detrDz)
               & (2*(real(K)-real(plumeDepthK))/real(detrN))**2)
             PLUME(ng) % det(K) = detrWeight * detrVel * dy * &
               & PLUME(ng) % dz(K)
+            write(*, *)  K, detrWeight, dy, PLUME(ng) % dz(K)
           ENDIF
         ENDDO
 !
