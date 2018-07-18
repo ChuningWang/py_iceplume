@@ -143,7 +143,7 @@ PROGRAM iceplume
   ENDDO
   write(*, *)  'Write output to files'
 !
-  open(unit=15, file='./data/plume_out_zw.txt')
+  open(unit=15, file='./outputs/plume_out_zw.txt')
   write(15, '(A3, 99 A12)')  'lev', 'zW', &
     & 't', 's', 'r', 'w', 'a', 'mInt', 'volFlux', 'rho'
   DO K = 0, Nr
@@ -154,7 +154,7 @@ PROGRAM iceplume
       & PLUME(ng) % volFlux(K), PLUME(ng) % rho(K)
   ENDDO
   close(unit=15)
-  open(unit=15, file='./data/plume_out_zr.txt')
+  open(unit=15, file='./outputs/plume_out_zr.txt')
   write(15, '(A3, 99 A12)')  'lev', 'zR', &
     & 'tAm', 'sAm', 'vAm', 'wAm', 'ent', 'det', &
     & 'fwFlux', 'heatFlux', 'rhoAm'

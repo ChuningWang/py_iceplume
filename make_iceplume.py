@@ -57,14 +57,14 @@ subprocess.call('./build.bash', shell=True)
 subprocess.call('./iceplume_test.exe', shell=True)
 
 # ------------ load results from txt files -----------------------------
-f = open('./data/plume_out_zr.txt', 'rb')
+f = open('./outputs/plume_out_zr.txt', 'rb')
 header_zr = f.readline().split()
 f.close()
-data_zr = np.loadtxt('./data/plume_out_zr.txt', skiprows=1)
-f = open('./data/plume_out_zw.txt', 'rb')
+data_zr = np.loadtxt('./outputs/plume_out_zr.txt', skiprows=1)
+f = open('./outputs/plume_out_zw.txt', 'rb')
 header_zw = f.readline().split()
 f.close()
-data_zw = np.loadtxt('./data/plume_out_zw.txt', skiprows=1)
+data_zw = np.loadtxt('./outputs/plume_out_zw.txt', skiprows=1)
 
 data = {}
 for (i, header) in enumerate(header_zr):
@@ -77,10 +77,10 @@ data['s'][msk] = np.NaN
 data['t'][msk] = np.NaN
 data['rho'][msk] = np.NaN
 
-# data['ent'][data['ent']==0] = np.NaN
-# data['det'][data['det']==0] = np.NaN
-
 fig, axs = plt.subplots(1, 3)
+axs[0].grid(True)
+axs[1].grid(True)
+axs[2].grid(True)
 axs[0].set_ylim([-800, 0])
 axs[1].set_ylim([-800, 0])
 axs[2].set_ylim([-800, 0])
@@ -101,3 +101,6 @@ axs[1].plot(data['rho'], zw, '-k')
 axs[1].plot(data['rhoAm'], zr, '--.k')
 axs[2].plot(data['ent']/dz/dy, zr, '-.k')
 axs[2].plot(data['det']/dz/dy, zr, '-.k')
+
+axs[1].legend(['Plume', 'Ambient'])
+plt.savefig('./figs/plume_out.png', dpi=600)

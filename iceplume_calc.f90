@@ -651,7 +651,6 @@ SUBROUTINE ICEPLUME_CURVE_DET(ng, detr, detrDz)
               & (2*(real(K)-real(plumeDepthK))/real(detrN))**2)
             PLUME(ng) % det(K) = detrWeight * detrVel * dy * &
               & PLUME(ng) % dz(K)
-            write(*, *)  K, detrWeight, dy, PLUME(ng) % dz(K)
           ENDIF
         ENDDO
 !

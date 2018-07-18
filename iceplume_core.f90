@@ -171,7 +171,6 @@ SUBROUTINE iceplume_plume_model(ng, rIni, tIni, sIni)
         sAmbient = .5*(PLUME(ng) % sAm(K) + PLUME(ng) % sAm(K+1))
       ENDIF
       rhoAmbient = RHO(tAmbient, sAmbient, depth)
-      write(*, *)  K, depth, rhoAmbient, rhoPlume
 !
       IF ((rhoPlume .GT. rhoAmbient) .OR. &
         & (K .EQ. Nr)) THEN
