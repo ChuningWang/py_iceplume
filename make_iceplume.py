@@ -47,10 +47,16 @@ salt_raw = salt_raw[::-1]
 
 temp = np.interp(zr, depth_raw, temp_raw)
 salt = np.interp(zr, depth_raw, salt_raw)
+dye01 = np.ones(N)
+v = np.zeros(N)
+w = np.zeros(N)
 
 np.savetxt('./data/iceplume_zw.txt', zw)
 np.savetxt('./data/iceplume_t.txt', temp)
 np.savetxt('./data/iceplume_s.txt', salt)
+np.savetxt('./data/iceplume_v.txt', v)
+np.savetxt('./data/iceplume_w.txt', w)
+np.savetxt('./data/iceplume_dye01.txt', dye01)
 
 # ------------ build and run the executable ----------------------------
 subprocess.call('./build.bash', shell=True)
