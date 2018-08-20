@@ -6,6 +6,7 @@
 *.o
 *.exe
 
+tidal_fjord/
 build/
 dist/
 data/

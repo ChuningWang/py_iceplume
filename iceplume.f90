@@ -7,7 +7,7 @@ PROGRAM iceplume
 !  Imported variable declarations.
 !
   integer :: ng = 1
-  real(r8) :: Qbar = 250.0d0, Qt = 0.0d0, Qs = 0.0d0
+  real(r8) :: Qbar = 100.0d0, Qt = 0.0d0, Qs = 0.0d0
 !
 ! Local variable declarations.
 !
@@ -36,8 +36,8 @@ PROGRAM iceplume
 ! ==================================================================
 !
   ngr = ng
-  Nr = 40
-  NTr = 3
+  Nr = N(ng)
+  NTr = NT(ng)
   dy = 200.0d0
   dx = 200.0d0
 !
@@ -105,6 +105,7 @@ PROGRAM iceplume
     CALL SW_TEMP(PLUME(ng) % sAm(K),  &
                & PLUME(ng) % tpAm(K), &
                & pr, prRef, PLUME(ng) % tAm(K))
+    !PLUME(ng) % tAm(K) = PLUME(ng) % tpAm(K)
   ENDDO
 !
 ! Discharge tracer concentration
@@ -147,7 +148,7 @@ PROGRAM iceplume
   write(15, '(A3, 99 A12)')  'lev', 'zW', &
     & 't', 's', 'r', 'w', 'a', 'mInt', 'volFlux', 'rho'
   DO K = 0, Nr
-    write(15, '(I4, 99 E12.4)')  K, PLUME(ng) % zW(K), &
+    write(15, '(I4, 99 E16.8)')  K, PLUME(ng) % zW(K), &
       & PLUME(ng) % t(K), PLUME(ng) % s(K), &
       & PLUME(ng) % r(K), PLUME(ng) % w(K), &
       & PLUME(ng) % a(K), PLUME(ng) % mInt(K), &
@@ -159,7 +160,7 @@ PROGRAM iceplume
     & 'tAm', 'sAm', 'vAm', 'wAm', 'ent', 'det', &
     & 'fwFlux', 'heatFlux', 'rhoAm'
   DO K = 1, Nr
-    write(15, '(I4, 99 E12.4)')  K, PLUME(ng) % zR(K), &
+    write(15, '(I4, 99 E16.8)')  K, PLUME(ng) % zR(K), &
       & PLUME(ng) % tAm(K), PLUME(ng) % sAm(K), &
       & PLUME(ng) % vAm(K), PLUME(ng) % wAm(K), &
       & PLUME(ng) % ent(K), PLUME(ng) % det(K), &

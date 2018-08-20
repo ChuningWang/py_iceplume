@@ -9,28 +9,32 @@ import pyroms
 subprocess.call('./build.bash', shell=True)
 
 # ------------ load data -----------------------------------------------
-fin = nc.Dataset('./data/fjord_his_00001.nc', 'r')
+fin = nc.Dataset('./tidal_fjord/tidal_fjord_w02000_s100_r0250_m2amp0.00_s2amp0.00_dth050_dthp0.025_his_00061.nc', 'r')
+time = fin.variables['ocean_time'][:]
 zeta = fin.variables['zeta'][:]
-salt = fin.variables['salt'][:, :, 135, 359]
-temp = fin.variables['temp'][:, :, 135, 359]
-dye01 = fin.variables['dye_01'][:, :, 135, 359]
-v = 0.5*(fin.variables['v'][:, :, 134, 359] +
-         fin.variables['v'][:, :, 135, 359])
-w = 0.5*(fin.variables['w'][:, 1:, 135, 359] +
-         fin.variables['w'][:, :-1, 135, 359])
-fin.close()
+salt = fin.variables['salt'][:, :, 136, 2]
+temp = fin.variables['temp'][:, :, 136, 2]
+dye01 = fin.variables['dye_01'][:, :, 136, 2]
+v = 0.5*(fin.variables['v'][:, :, 137, 2] +
+         fin.variables['v'][:, :, 136, 2])
+w = 0.5*(fin.variables['w'][:, 1:, 136, 2] +
+         fin.variables['w'][:, :-1, 136, 2])
+# fin.close()
 
-grd = pyroms.grid.get_ROMS_grid('fjord', zeta=zeta)
-zw = grd.vgrid.z_w[:, :, 135, 359]
+grd = pyroms.grid.get_ROMS_grid(None, zeta=zeta,
+        hist_file='./tidal_fjord/tidal_fjord_w02000_s100_r0250_m2amp0.00_s2amp0.00_dth050_dthp0.025_his_00061.nc',
+        grid_file='./tidal_fjord/tidal_fjord_grid_w02000_s100_r0250_m2amp0.00_s2amp0.00_dth050_dthp0.025.nc')
+zw = grd.vgrid.z_w[:, :, 136, 2]
+zr = grd.vgrid.z_r[:, :, 136, 2]
 
 nt, nw = zw.shape
 nr = nw - 1
 
 # ------------ initiate variables --------------------------------------
-f = open('./data/plume_out_zr.txt', 'rb')
+f = open('./outputs/plume_out_zr.txt', 'rb')
 header_zr = f.readline().split()
 f.close()
-f = open('./data/plume_out_zw.txt', 'rb')
+f = open('./outputs/plume_out_zw.txt', 'rb')
 header_zw = f.readline().split()
 f.close()
 
@@ -60,11 +64,14 @@ for ti in range(nt):
     subprocess.call('./iceplume_test.exe', shell=True)
 
     # ------------ load results from txt files -----------------------------
-    data_zr = np.loadtxt('./data/plume_out_zr.txt', skiprows=1)
-    data_zw = np.loadtxt('./data/plume_out_zw.txt', skiprows=1)
+    data_zr = np.loadtxt('./outputs/plume_out_zr.txt', skiprows=1)
+    data_zw = np.loadtxt('./outputs/plume_out_zw.txt', skiprows=1)
 
     for (i, header) in enumerate(header_zr):
         if str(header) != 'lev':
             data[header][ti, :] = data_zr[:, i]
     for (i, header) in enumerate(header_zw):
         data[header][ti, :] = data_zw[:, i]
+
+det = data['det']
+ent = data['ent']
