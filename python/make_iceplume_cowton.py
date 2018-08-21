@@ -9,7 +9,7 @@ import pyroms
 # ------------ vertical grid construction ------------------------------
 dy = 200
 
-fh = open('./data/outputs.txt', 'r')
+fh = open('../data/outputs.txt', 'r')
 csvR = csv.reader(fh, delimiter=' ', skipinitialspace=True)
 data_cowton = []
 for row in csvR:
@@ -32,26 +32,26 @@ dye01 = np.zeros(temp.shape)
 v = np.zeros(temp.shape)
 w = np.zeros(temp.shape)
 
-np.savetxt('./data/iceplume_zw.txt', zw)
-np.savetxt('./data/iceplume_t.txt', temp)
-np.savetxt('./data/iceplume_s.txt', salt)
-np.savetxt('./data/iceplume_v.txt', v)
-np.savetxt('./data/iceplume_w.txt', w)
-np.savetxt('./data/iceplume_dye01.txt', dye01)
+np.savetxt('../data/iceplume_zw.txt', zw)
+np.savetxt('../data/iceplume_t.txt', temp)
+np.savetxt('../data/iceplume_s.txt', salt)
+np.savetxt('../data/iceplume_v.txt', v)
+np.savetxt('../data/iceplume_w.txt', w)
+np.savetxt('../data/iceplume_dye01.txt', dye01)
 
 # ------------ build and run the executable ----------------------------
-subprocess.call('./build.bash', shell=True)
-subprocess.call('./iceplume_test.exe', shell=True)
+subprocess.call('../build.bash', shell=True)
+subprocess.call('../iceplume_test.exe', shell=True)
 
 # ------------ load results from txt files -----------------------------
-f = open('./outputs/plume_out_zr.txt', 'rb')
+f = open('../outputs/plume_out_zr.txt', 'rb')
 header_zr = f.readline().split()
 f.close()
-data_zr = np.loadtxt('./outputs/plume_out_zr.txt', skiprows=1)
-f = open('./outputs/plume_out_zw.txt', 'rb')
+data_zr = np.loadtxt('../outputs/plume_out_zr.txt', skiprows=1)
+f = open('../outputs/plume_out_zw.txt', 'rb')
 header_zw = f.readline().split()
 f.close()
-data_zw = np.loadtxt('./outputs/plume_out_zw.txt', skiprows=1)
+data_zw = np.loadtxt('../outputs/plume_out_zw.txt', skiprows=1)
 
 data = {}
 for (i, header) in enumerate(header_zr):
@@ -104,7 +104,7 @@ axs[1, 1].plot(data_cowton[:, 8], data_cowton[:, 0], '-C3')
 
 axs[0, 0].legend(['ROMS', 'Cowton15', 'Ambient'])
 
-plt.savefig('./figs/cowton15_out.png', dpi=600)
+plt.savefig('../figs/cowton15_out.png', dpi=600)
 
 for i in range(2):
     for j in range(2):
@@ -129,4 +129,4 @@ axs[1, 0].plot(data_cowton[:, 3]-1000, data_cowton[:, 0], 'ok', markerfacecolor=
 axs[1, 1].plot(data['r'], zw, 'oC0', linewidth=4, markerfacecolor='None', markersize=5)
 axs[1, 1].plot(data_cowton[:, 8], data_cowton[:, 0], 'oC3', markerfacecolor='None', markersize=3)
 
-plt.savefig('./figs/cowton15_out2.png', dpi=600)
+plt.savefig('../figs/cowton15_out2.png', dpi=600)

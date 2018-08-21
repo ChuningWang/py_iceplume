@@ -37,7 +37,7 @@ dz = np.diff(zw)
 dy = 200
 
 # ------------ load profiles -------------------------------------------
-data = io.loadmat('./carroll_2017_JGR_oceans_initialTS.mat')
+data = io.loadmat('../carroll_2017_JGR_oceans_initialTS.mat')
 depth_raw = np.array(data['depth']).squeeze()
 temp_raw = np.array(data['temperature']).squeeze()
 salt_raw = np.array(data['salinity']).squeeze()
@@ -51,26 +51,26 @@ dye01 = np.ones(N)
 v = np.zeros(N)
 w = np.zeros(N)
 
-np.savetxt('./data/iceplume_zw.txt', zw)
-np.savetxt('./data/iceplume_t.txt', temp)
-np.savetxt('./data/iceplume_s.txt', salt)
-np.savetxt('./data/iceplume_v.txt', v)
-np.savetxt('./data/iceplume_w.txt', w)
-np.savetxt('./data/iceplume_dye01.txt', dye01)
+np.savetxt('../data/iceplume_zw.txt', zw)
+np.savetxt('../data/iceplume_t.txt', temp)
+np.savetxt('../data/iceplume_s.txt', salt)
+np.savetxt('../data/iceplume_v.txt', v)
+np.savetxt('../data/iceplume_w.txt', w)
+np.savetxt('../data/iceplume_dye01.txt', dye01)
 
 # ------------ build and run the executable ----------------------------
-subprocess.call('./build.bash', shell=True)
-subprocess.call('./iceplume_test.exe', shell=True)
+subprocess.call('../build.bash', shell=True)
+subprocess.call('../iceplume_test.exe', shell=True)
 
 # ------------ load results from txt files -----------------------------
-f = open('./outputs/plume_out_zr.txt', 'rb')
+f = open('../outputs/plume_out_zr.txt', 'rb')
 header_zr = f.readline().split()
 f.close()
 data_zr = np.loadtxt('./outputs/plume_out_zr.txt', skiprows=1)
-f = open('./outputs/plume_out_zw.txt', 'rb')
+f = open('../outputs/plume_out_zw.txt', 'rb')
 header_zw = f.readline().split()
 f.close()
-data_zw = np.loadtxt('./outputs/plume_out_zw.txt', skiprows=1)
+data_zw = np.loadtxt('../outputs/plume_out_zw.txt', skiprows=1)
 
 data = {}
 for (i, header) in enumerate(header_zr):
@@ -109,4 +109,4 @@ axs[2].plot(data['ent']/dz/dy, zr, '-.k')
 axs[2].plot(data['det']/dz/dy, zr, '-.k')
 
 axs[1].legend(['Plume', 'Ambient'])
-plt.savefig('./figs/plume_out.png', dpi=600)
+plt.savefig('../figs/plume_out.png', dpi=600)

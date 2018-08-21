@@ -6,10 +6,10 @@ import netCDF4 as nc
 import pyroms
 
 # ------------ build the executable ------------------------------------
-subprocess.call('./build.bash', shell=True)
+subprocess.call('../build.bash', shell=True)
 
 # ------------ load data -----------------------------------------------
-fin = nc.Dataset('./tidal_fjord/tidal_fjord_w02000_s100_r0250_m2amp0.00_s2amp0.00_dth050_dthp0.025_his_00061.nc', 'r')
+fin = nc.Dataset('../tidal_fjord/tidal_fjord_w02000_s100_r0250_m2amp0.00_s2amp0.00_dth050_dthp0.025_his_00061.nc', 'r')
 time = fin.variables['ocean_time'][:]
 zeta = fin.variables['zeta'][:]
 salt = fin.variables['salt'][:, :, 136, 2]
@@ -22,8 +22,8 @@ w = 0.5*(fin.variables['w'][:, 1:, 136, 2] +
 # fin.close()
 
 grd = pyroms.grid.get_ROMS_grid(None, zeta=zeta,
-        hist_file='./tidal_fjord/tidal_fjord_w02000_s100_r0250_m2amp0.00_s2amp0.00_dth050_dthp0.025_his_00061.nc',
-        grid_file='./tidal_fjord/tidal_fjord_grid_w02000_s100_r0250_m2amp0.00_s2amp0.00_dth050_dthp0.025.nc')
+        hist_file='../tidal_fjord/tidal_fjord_w02000_s100_r0250_m2amp0.00_s2amp0.00_dth050_dthp0.025_his_00061.nc',
+        grid_file='../tidal_fjord/tidal_fjord_grid_w02000_s100_r0250_m2amp0.00_s2amp0.00_dth050_dthp0.025.nc')
 zw = grd.vgrid.z_w[:, :, 136, 2]
 zr = grd.vgrid.z_r[:, :, 136, 2]
 
@@ -31,10 +31,10 @@ nt, nw = zw.shape
 nr = nw - 1
 
 # ------------ initiate variables --------------------------------------
-f = open('./outputs/plume_out_zr.txt', 'rb')
+f = open('../outputs/plume_out_zr.txt', 'rb')
 header_zr = f.readline().split()
 f.close()
-f = open('./outputs/plume_out_zw.txt', 'rb')
+f = open('../outputs/plume_out_zw.txt', 'rb')
 header_zw = f.readline().split()
 f.close()
 
@@ -53,19 +53,19 @@ for (i, header) in enumerate(header_zw):
 print('Run the module')
 
 for ti in range(nt):
-    np.savetxt('./data/iceplume_zw.txt', zw[ti])
-    np.savetxt('./data/iceplume_t.txt', temp[ti])
-    np.savetxt('./data/iceplume_s.txt', salt[ti])
-    np.savetxt('./data/iceplume_dye01.txt', dye01[ti])
-    np.savetxt('./data/iceplume_v.txt', v[ti])
-    np.savetxt('./data/iceplume_w.txt', w[ti])
+    np.savetxt('../data/iceplume_zw.txt', zw[ti])
+    np.savetxt('../data/iceplume_t.txt', temp[ti])
+    np.savetxt('../data/iceplume_s.txt', salt[ti])
+    np.savetxt('../data/iceplume_dye01.txt', dye01[ti])
+    np.savetxt('../data/iceplume_v.txt', v[ti])
+    np.savetxt('../data/iceplume_w.txt', w[ti])
 
     # ------------ run the executable --------------------------------------
-    subprocess.call('./iceplume_test.exe', shell=True)
+    subprocess.call('../iceplume_test.exe', shell=True)
 
     # ------------ load results from txt files -----------------------------
-    data_zr = np.loadtxt('./outputs/plume_out_zr.txt', skiprows=1)
-    data_zw = np.loadtxt('./outputs/plume_out_zw.txt', skiprows=1)
+    data_zr = np.loadtxt('../outputs/plume_out_zr.txt', skiprows=1)
+    data_zw = np.loadtxt('../outputs/plume_out_zw.txt', skiprows=1)
 
     for (i, header) in enumerate(header_zr):
         if str(header) != 'lev':

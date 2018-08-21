@@ -5,7 +5,7 @@ import csv
 import pyroms
 
 # ------------ build the executable ------------------------------------
-subprocess.call('./build.bash', shell=True)
+subprocess.call('../build.bash', shell=True)
 
 # ------------ basic grid parameters -----------------------------------
 # vertical grid specs
@@ -15,10 +15,10 @@ Tcline = 10
 N = 40
 
 # get header info
-f = open('./data/plume_out_zr.txt', 'rb')
+f = open('../data/plume_out_zr.txt', 'rb')
 header_zr = f.readline().split()
 f.close()
-f = open('./data/plume_out_zw.txt', 'rb')
+f = open('../data/plume_out_zw.txt', 'rb')
 header_zw = f.readline().split()
 f.close()
 
@@ -42,7 +42,7 @@ zw2 = -zw2[::-1]
 zr2 = 0.5*(zw2[1:] + zw2[:-1])
 
 # ------------ load profiles -------------------------------------------
-data = io.loadmat('./carroll_2017_JGR_oceans_initialTS.mat')
+data = io.loadmat('../carroll_2017_JGR_oceans_initialTS.mat')
 depth_raw = np.array(data['depth']).squeeze()
 temp_raw = np.array(data['temperature']).squeeze()
 salt_raw = np.array(data['salinity']).squeeze()
@@ -58,14 +58,14 @@ salt2 = np.interp(zr2, depth_raw, salt_raw)
 
 # ------------ run executable ------------------------------------------
 # first, with ROMS grid
-np.savetxt('./data/iceplume_zw.txt', zw)
-np.savetxt('./data/iceplume_t.txt', temp)
-np.savetxt('./data/iceplume_s.txt', salt)
+np.savetxt('../data/iceplume_zw.txt', zw)
+np.savetxt('../data/iceplume_t.txt', temp)
+np.savetxt('../data/iceplume_s.txt', salt)
 
-subprocess.call('./iceplume_test.exe', shell=True)
+subprocess.call('../iceplume_test.exe', shell=True)
 
-data_zr = np.loadtxt('./data/plume_out_zr.txt', skiprows=1)
-data_zw = np.loadtxt('./data/plume_out_zw.txt', skiprows=1)
+data_zr = np.loadtxt('../data/plume_out_zr.txt', skiprows=1)
+data_zw = np.loadtxt('../data/plume_out_zw.txt', skiprows=1)
 
 data = {}
 
@@ -76,14 +76,14 @@ for (i, header) in enumerate(header_zw):
     data[header] = data_zw[:, i]
 
 # second, with Carroll 2017 grid
-np.savetxt('./data/iceplume_zw.txt', zw2)
-np.savetxt('./data/iceplume_t.txt', temp2)
-np.savetxt('./data/iceplume_s.txt', salt2)
+np.savetxt('../data/iceplume_zw.txt', zw2)
+np.savetxt('../data/iceplume_t.txt', temp2)
+np.savetxt('../data/iceplume_s.txt', salt2)
 
-subprocess.call('./iceplume_test.exe', shell=True)
+subprocess.call('../iceplume_test.exe', shell=True)
 
-data_zr = np.loadtxt('./data/plume_out_zr.txt', skiprows=1)
-data_zw = np.loadtxt('./data/plume_out_zw.txt', skiprows=1)
+data_zr = np.loadtxt('../data/plume_out_zr.txt', skiprows=1)
+data_zw = np.loadtxt('../data/plume_out_zw.txt', skiprows=1)
 
 data2 = {}
 

@@ -9,6 +9,6 @@
 tidal_fjord/
 build/
 dist/
-data/*
-figs/*
-outputs/*
+data/
+figs/
+outputs/

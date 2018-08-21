@@ -94,13 +94,16 @@ PROGRAM iceplume
 !
 ! convert potential temp to in-situ temp
 !
-    prRef = 101.d3*1.d-4
-    pr = prRef + &
-      & (abs(PLUME(ng) % zW(I, K))*rho_ref*g)*1.d-4  ! [dbar]
-    CALL SW_TEMP(PLUME(ng) % sAm(I, K),  &
-               & PLUME(ng) % tpAm(I, K), &
-               & pr, prRef, PLUME(ng) % tAm(I, K))
-    !PLUME(ng) % tAm(I, K) = PLUME(ng) % tpAm(I, K)
+    IF (usePotTemp) THEN
+      prRef = 101.d3*1.d-4
+      pr = prRef + &
+        & (abs(PLUME(ng) % zW(I, K))*rho_ref*g)*1.d-4  ! [dbar]
+      CALL SW_TEMP(PLUME(ng) % sAm(I, K),  &
+                 & PLUME(ng) % tpAm(I, K), &
+                 & pr, prRef, PLUME(ng) % tAm(I, K))
+    ELSE
+      PLUME(ng) % tAm(I, K) = PLUME(ng) % tpAm(I, K)
+    ENDIF
   ENDDO
 !
 ! Discharge tracer concentration
