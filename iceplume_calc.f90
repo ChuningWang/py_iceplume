@@ -5,7 +5,8 @@
 !                                                                   !
 ! ==================================================================!
 !
-SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
+SUBROUTINE ICEPLUME_CALC(ng, I, dx, dy, &
+                       & QIni, TIni, SIni)
 !
   USE mod_iceplume
   implicit none
@@ -20,12 +21,17 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 ! meanVel :: ice tangental velocity
 ! ==================================================================
 !
-  integer, intent(in) :: ng
-  real(r8) :: QIni, rIni, TIni, SIni
+  integer, intent(in) :: ng, I
+  real(r8), intent(in) :: dx, dy
+  real(r8) :: QIni, TIni, SIni
+  real(r8) :: rIni
+  integer :: iceDepthK, plumeDepthK
   real(r8) :: negSum, posSum, posNegRatio
   real(r8) :: meanVel, depth
   real(r8) :: plumeAreaInCell
   real(r8) :: detr, detrDz
+  integer :: K, iTracer
+  real(r8) :: RHO
 !
 ! Read in the subglacial discharge for this cell
 !
@@ -40,8 +46,9 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 ! Create variables with temperature, salinity, density
 ! and velocity profiles for that column
 !
-  DO K = 1, Nr
-      PLUME(ng) % dz(K) = PLUME(ng) % zW(K) - PLUME(ng) % zW(K-1)
+  DO K = 1, N(ng)
+      PLUME(ng) % dz(I, K) = &
+        & PLUME(ng) % zW(I, K) - PLUME(ng) % zW(I, K-1)
   ENDDO
 !
 ! If discharge input salinity is less or equal than zero, set it to
@@ -59,8 +66,8 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
   IF (iceDepth .GE. 0) THEN
     iceDepthK = 0
   ELSE
-    DO K = 0, Nr
-      IF (PLUME(ng) % zW(K) .GE. iceDepth) THEN
+    DO K = 0, N(ng)
+      IF (PLUME(ng) % zW(I, K) .GE. iceDepth) THEN
         iceDepthK = K
         EXIT
       ENDIF
@@ -75,11 +82,11 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 !
 ! Run the plume model
 !
-    CALL ICEPLUME_PLUME_MODEL(ng, rIni, TIni, SIni)
+    CALL ICEPLUME_PLUME_MODEL(ng, I, dy, iceDepthK, rIni, TIni, SIni)
 !
 ! Calculate vertical plume volume flux
 !
-    DO k = 1, Nr
+    DO k = 1, N(ng)
 !
 ! After checking to see if we are above the base of the ice face...
 !
@@ -88,40 +95,40 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 ! assuming specified plume horizontal extent (for sheet flow)...
 !
         IF (useSheetPlume) THEN
-          PLUME(ng) % volFlux(K) = &
-            & (PLUME(ng) % r(K)) * (PLUME(ng) % w(K)) * dy
+          PLUME(ng) % volFlux(I, K) = &
+            & (PLUME(ng) % r(I, K)) * (PLUME(ng) % w(I, K)) * dy
         ELSEIF (useConePlume) THEN
-          PLUME(ng) % volFlux(K) = &
-            & pi * ((PLUME(ng) % r(K))**2) * &
-            & (PLUME(ng) % w(K)) / 2.
+          PLUME(ng) % volFlux(I, K) = &
+            & pi * ((PLUME(ng) % r(I, K))**2) * &
+            & (PLUME(ng) % w(I, K)) / 2.
         ELSE
-          PLUME(ng) % volFlux(K) = 0.0d0
+          PLUME(ng) % volFlux(I, K) = 0.0d0
         ENDIF
       ELSE
-        PLUME(ng) % volFlux(K) = 0.0d0
+        PLUME(ng) % volFlux(I, K) = 0.0d0
       ENDIF
     ENDDO
 !
 ! A couple of corrections:
 ! Even if plume is still buoyant, it cannot flow through the fjord surface
 !
-    PLUME(ng) % volFlux(Nr) = 0.0d0
+    PLUME(ng) % volFlux(I, N(ng)) = 0.0d0
 !
 ! The initial volume flux is equal to runoff
 !
-    PLUME(ng) % volFlux(iceDepthK) = QIni
+    PLUME(ng) % volFlux(I, iceDepthK) = QIni
 !
 ! Calculate volume flux differential to give entrainment / extrainment
 ! First clear ent / det
 !
-    DO K = 1,Nr
-      PLUME(ng) % ent(K) = 0.0d0
-      PLUME(ng) % det(K) = 0.0d0
+    DO K = 1,N(ng)
+      PLUME(ng) % ent(I, K) = 0.0d0
+      PLUME(ng) % det(I, K) = 0.0d0
     ENDDO
 !
-    DO K = iceDepthK+1, Nr
-      PLUME(ng) % ent(K) = &
-        & -(PLUME(ng) % volFlux(K) - PLUME(ng) % volFlux(K-1))
+    DO K = iceDepthK+1, N(ng)
+      PLUME(ng) % ent(I, K) = &
+        & -(PLUME(ng) % volFlux(I, K) - PLUME(ng) % volFlux(I, K-1))
     ENDDO
 !
     IF (conserveMass) THEN
@@ -132,29 +139,29 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
       negSum = 0.d0
       posSum = 0.d0
 !
-      DO K = iceDepthK+1, Nr
-        IF ( PLUME(ng) % ent(K) .LT. 0 ) THEN
-          negSum = PLUME(ng) % ent(K) + negSum
+      DO K = iceDepthK+1, N(ng)
+        IF ( PLUME(ng) % ent(I, K) .LT. 0 ) THEN
+          negSum = PLUME(ng) % ent(I, K) + negSum
         ELSE
-          posSum = PLUME(ng) % ent(K) + posSum
+          posSum = PLUME(ng) % ent(I, K) + posSum
         ENDIF
       ENDDO
 !
       IF ( negSum .NE. 0 ) THEN
         posNegRatio = -negSum / posSum
-          DO K = 1,Nr
-            IF (PLUME(ng) % ent(K) .GT. 0) &
-            & PLUME(ng) % ent(K) = (PLUME(ng) % ent(K)) * posNegRatio
+          DO K = 1,N(ng)
+            IF (PLUME(ng) % ent(I, K) .GT. 0) &
+              & PLUME(ng) % ent(I, K) = (PLUME(ng) % ent(I, K)) * posNegRatio
         ENDDO
       ENDIF
     ENDIF
 !
 ! Separate entrainment / detrainment
 !
-    DO K = iceDepthK+1, Nr
-      IF (PLUME(ng) % ent(K) .GT. 0.d0) THEN
-        PLUME(ng) % det(K) = PLUME(ng) % ent(K)
-        PLUME(ng) % ent(K) = 0.d0
+    DO K = iceDepthK+1, N(ng)
+      IF (PLUME(ng) % ent(I, K) .GT. 0.d0) THEN
+        PLUME(ng) % det(I, K) = PLUME(ng) % ent(I, K)
+        PLUME(ng) % ent(I, K) = 0.d0
       ENDIF
     ENDDO
 !
@@ -162,15 +169,15 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 !
 ! If no subglacial discharge, then there is no plume
 !
-    DO k = 1,Nr
-      PLUME(ng) % r(K) = 0.d0
-      PLUME(ng) % w(K) = 0.d0
-      PLUME(ng) % t(K) = 0.d0
-      PLUME(ng) % s(K) = 0.d0
-      PLUME(ng) % a(K) = 0.d0
-      PLUME(ng) % mInt(K) = 0.d0
-      PLUME(ng) % ent(K) = 0.d0
-      PLUME(ng) % det(K) = 0.d0
+    DO k = 1, N(ng)
+      PLUME(ng) % r(I, K) = 0.d0
+      PLUME(ng) % w(I, K) = 0.d0
+      PLUME(ng) % t(I, K) = 0.d0
+      PLUME(ng) % s(I, K) = 0.d0
+      PLUME(ng) % a(I, K) = 0.d0
+      PLUME(ng) % mInt(I, K) = 0.d0
+      PLUME(ng) % ent(I, K) = 0.d0
+      PLUME(ng) % det(I, K) = 0.d0
     ENDDO
   ENDIF
 !
@@ -206,19 +213,22 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 !
     detr = 0.d0
     detrDz = 1.d-7
-    DO K = 1,Nr
-      IF (PLUME(ng) % det(K) .GT. 0.d0) THEN
+    DO K = 1,N(ng)
+      IF (PLUME(ng) % det(I, K) .GT. 0.d0) THEN
         plumeDepthK = K
-        detr = detr + PLUME(ng) % det(K)
-        detrDz = detrDz + PLUME(ng) % dz(K)
-        PLUME(ng) % detI(K) = 1
+        detr = detr + PLUME(ng) % det(I, K)
+        detrDz = detrDz + PLUME(ng) % dz(I, K)
+        PLUME(ng) % detI(I, K) = 1
       ELSE
-        PLUME(ng) % detI(K) = 0
+        PLUME(ng) % detI(I, K) = 0
       ENDIF
     ENDDO
 !
     IF (checkCFL .OR. checkRiB) THEN
-      CALL ICEPLUME_CURVE_DET(ng, detr, detrDz)
+      CALL ICEPLUME_CURVE_DET(ng, I, &
+                            & iceDepthK, plumeDepthK, &
+                            & dx, dy, &
+                            & detr, detrDz)
     ENDIF  ! checkCFL .OR. checkRiB
   ENDIF  ! Qini .GT. 0.0d0
 !
@@ -234,21 +244,21 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 !
 ! Clear local plume tracer variables
 !
-  DO iTracer = 1, NTr
-    PLUME(ng) % trc(iTracer)    = 0.d0
-    PLUME(ng) % trcCum(iTracer) = 0.d0
+  DO iTracer = 1, NT(ng)
+    PLUME(ng) % trc(I, iTracer)    = 0.d0
+    PLUME(ng) % trcCum(I, iTracer) = 0.d0
   ENDDO
 !
   IF (QIni .GT. 0) THEN
 !
 ! Write the active tracer (T & S) concentration to PLUME (ng) % trc
 !
-    PLUME(ng) % trc(isalt) = &
-      & 0.5*(PLUME(ng) % s(plumeDepthK-1) + &
-      &      PLUME(ng) % s(plumeDepthK))
-    PLUME(ng) % trc(itemp) = &
-      & 0.5*(PLUME(ng) % t(plumeDepthK-1) + &
-      &      PLUME(ng) % t(plumeDepthK))
+    PLUME(ng) % trc(I, isalt) = &
+      & 0.5*(PLUME(ng) % s(I, plumeDepthK-1) + &
+      &      PLUME(ng) % s(I, plumeDepthK))
+    PLUME(ng) % trc(I, itemp) = &
+      & 0.5*(PLUME(ng) % t(I, plumeDepthK-1) + &
+      &      PLUME(ng) % t(I, plumeDepthK))
 !
     IF (useTracers) THEN
 !
@@ -258,30 +268,31 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 ! Add ptracers in runoff
 !
       IF (useInputTracers) THEN
-        DO iTracer = 3, NTr
-          PLUME(ng) % trcCum(iTracer) = &
-            & PLUME(ng) % trcCum(iTracer) + &
-            & PLUME(ng) % trcIni(iTracer) * QIni
+        DO iTracer = 3, NT(ng)
+          PLUME(ng) % trcCum(I, iTracer) = &
+            & PLUME(ng) % trcCum(I, iTracer) + &
+            & PLUME(ng) % trcIni(I, iTracer) * QIni
         ENDDO
       ENDIF
 !
 ! Add up total sum of each tracer in plume
 !
-      DO K = iceDepthK+1, Nr
-        IF (PLUME(ng) % ent(K) .LT. 0.) THEN
-          DO iTracer = 3, NTr
-            PLUME(ng) % trcCum(iTracer) = &
-              & PLUME(ng) % trcCum(iTracer) + &
-              & (-PLUME(ng) % ent(K) * PLUME(ng) % trcAm(K, iTracer))
+      DO K = iceDepthK+1, N(ng)
+        IF (PLUME(ng) % ent(I, K) .LT. 0.) THEN
+          DO iTracer = 3, NT(ng)
+            PLUME(ng) % trcCum(I, iTracer) = &
+              & PLUME(ng) % trcCum(I, iTracer) + &
+              & (-PLUME(ng) % ent(I, K) * &
+              &   PLUME(ng) % trcAm(I, K, iTracer))
           ENDDO
         ENDIF
       ENDDO
 !
 ! Calculate concentration of tracer in outflow 
 !
-      DO iTracer = 3, NTr
-        PLUME(ng) % trc(iTracer) = &
-          & PLUME(ng) % trcCum(iTracer) / detr
+      DO iTracer = 3, NT(ng)
+        PLUME(ng) % trc(I, iTracer) = &
+          & PLUME(ng) % trcCum(I, iTracer) / detr
       ENDDO
     ENDIF
   ENDIF
@@ -290,7 +301,7 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 ! Calculate melt rates
 ! ==================================================================
 !
-  DO K = 1, Nr
+  DO K = 1, N(ng)
 !
 ! Check if we are above sea bed
 !
@@ -298,9 +309,9 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 !
 ! If not then there is no melting
 !
-      PLUME(ng) % mAv(K) = 0.d0
-      PLUME(ng) % m(K) = 0.d0
-      PLUME(ng) % mAm(K) = 0.d0
+      PLUME(ng) % mAv(I, K) = 0.d0
+      PLUME(ng) % m(I, K) = 0.d0
+      PLUME(ng) % mAm(I, K) = 0.d0
     ELSE
 !
 ! ==================================================================
@@ -313,21 +324,21 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 !
       plumeAreaInCell = 0.d0
       IF ((QIni .NE. 0) .AND. (useConePlume .OR. useSheetPlume)) THEN
-        plumeAreaInCell = PLUME(ng) % a(K) - PLUME(ng) % a(K-1)
+        plumeAreaInCell = PLUME(ng) % a(I, K) - PLUME(ng) % a(I, K-1)
 !
         IF (plumeAreaInCell .GT. 0.0) THEN
-          PLUME(ng) % m(K) = &
-            & (PLUME(ng) % mInt(K) - &
-            &  PLUME(ng) % mInt(K-1)) / &
+          PLUME(ng) % m(I, K) = &
+            & (PLUME(ng) % mInt(I, K) - &
+            &  PLUME(ng) % mInt(I, K-1)) / &
             & plumeAreaInCell
         ELSE
-          PLUME(ng) % m(K) = 0.d0
+          PLUME(ng) % m(I, K) = 0.d0
         ENDIF
       ELSE
 !
 ! If no plume in that cell set plume melt rate to zero
 !
-        PLUME(ng) % m(K) = 0.d0
+        PLUME(ng) % m(I, K) = 0.d0
       ENDIF
 !
 ! ==================================================================
@@ -340,17 +351,17 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 !
       IF (useBkgMelt) THEN
 !
-        meanVel = ((PLUME(ng) % vAm(K))**2 + &
-                 & (PLUME(ng) % wAm(K))**2)**0.5d0
-        depth = 0.5d0*(PLUME(ng) % zW(K-1) + PLUME(ng) % zW(K))
-        CALL ICEPLUME_MELTRATE(PLUME(ng) % tAm(K), &
-                             & PLUME(ng) % sAm(K), &
+        meanVel = ((PLUME(ng) % vAm(I, K))**2 + &
+                 & (PLUME(ng) % wAm(I, K))**2)**0.5d0
+        depth = 0.5d0*(PLUME(ng) % zW(I, K-1) + PLUME(ng) % zW(I, K))
+        CALL ICEPLUME_MELTRATE(PLUME(ng) % tAm(I, K), &
+                             & PLUME(ng) % sAm(I, K), &
                              & meanVel, depth,     &
-                             & PLUME(ng) % mAm(K), &
-                             & PLUME(ng) % sB(K),  &
-                             & PLUME(ng) % tB(K))
+                             & PLUME(ng) % mAm(I, K), &
+                             & PLUME(ng) % sB(I, K),  &
+                             & PLUME(ng) % tB(I, K))
       ELSE
-        PLUME(ng) % mAm(K) = 0.d0
+        PLUME(ng) % mAm(I, K) = 0.d0
       ENDIF
 !
 ! Get average melt rate. This is useful for visualizing melt patterns
@@ -358,47 +369,47 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 ! The following should apply to both conical and sheet plume models
 !
       IF (QIni .NE. 0) THEN
-        plumeAreaInCell = PLUME(ng) % a(K) - PLUME(ng) % a(K-1)
-        IF (plumeAreaInCell .LE. dy*PLUME(ng) % dz(K)) THEN
+        plumeAreaInCell = PLUME(ng) % a(I, K) - PLUME(ng) % a(I, K-1)
+        IF (plumeAreaInCell .LE. dy*PLUME(ng) % dz(I, K)) THEN
           IF (plumeAreaInCell .LE. 0) THEN
 !
 ! If there is no plume in cell, then the melt rate is
 ! equal to the background melt rate.
 !
-            PLUME(ng) % mAv(K) = PLUME(ng) % m(K)
+            PLUME(ng) % mAv(I, K) = PLUME(ng) % m(I, K)
           ELSE
 !
 ! If there is a plume in cell, calculate average melt rate
 !
-            PLUME(ng) % mAv(K) = &
-              & (PLUME(ng) % m(K)*plumeAreaInCell + &
-              &  PLUME(ng) % mAm(K) * &
-              & (dy*(PLUME(ng) % dz(K))-plumeAreaInCell)) / &
-              & (dy*(PLUME(ng) % dz(K)))
+            PLUME(ng) % mAv(I, K) = &
+              & (PLUME(ng) % m(I, K)*plumeAreaInCell + &
+              &  PLUME(ng) % mAm(I, K) * &
+              & (dy*(PLUME(ng) % dz(I, K))-plumeAreaInCell)) / &
+              & (dy*(PLUME(ng) % dz(I, K)))
 !
 ! Scale down background melt rate to account for area occupied by
 ! plume (necessary so that tendency terms aren't over estimated)
 !
-            PLUME(ng) % mAm(K) = &
-              & PLUME(ng) % mAm(K) * &
-              & (1 - plumeAreaInCell/(dy*(PLUME(ng) % dz(K))))
+            PLUME(ng) % mAm(I, K) = &
+              & PLUME(ng) % mAm(I, K) * &
+              & (1 - plumeAreaInCell/(dy*(PLUME(ng) % dz(I, K))))
           ENDIF
         ELSE  ! plumeAreaInCell .GE. dy*dz(K)
 !
 ! If the plume contact area is larger than the cell area, we
 ! assume there is no background melting
 !
-          PLUME(ng) % mAv(K) = &
-            & (PLUME(ng) % m(K)) * plumeAreaInCell / &
-            & (dy*(PLUME(ng) % dz(K)))
-          PLUME(ng) % mAm(K) = 0.d0
+          PLUME(ng) % mAv(I, K) = &
+            & (PLUME(ng) % m(I, K)) * plumeAreaInCell / &
+            & (dy*(PLUME(ng) % dz(I, K)))
+          PLUME(ng) % mAm(I, K) = 0.d0
         ENDIF
       ELSE
 !
 ! If it is not a plume cell, then no plume melting.
 !
-        PLUME(ng) % m(K) = 0.d0
-        PLUME(ng) % mAv(K) = PLUME(ng) % mAm(K)
+        PLUME(ng) % m(I, K) = 0.d0
+        PLUME(ng) % mAv(I, K) = PLUME(ng) % mAm(I, K)
       ENDIF  ! plume type
     ENDIF  ! above or below sea bed
   ENDDO
@@ -412,7 +423,7 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 ! Calculate the rate of temperature decrease in grid cells due to
 ! backgroud melting
 !
-    DO K = 1, Nr
+    DO K = 1, N(ng)
 !
 ! Check if above ice depth
 !
@@ -420,63 +431,74 @@ SUBROUTINE ICEPLUME_CALC(ng, QIni, TIni, SIni)
 !
 ! Below the ice depth, there is no heat and freshwater flux
 !
-        PLUME(ng) % fwFlux(K) = 0.d0
-        PLUME(ng) % heatFlux(K) = 0.d0
-        PLUME(ng) % tendT(K) = 0.d0
-        PLUME(ng) % tendS(K) = 0.d0
+        PLUME(ng) % fwFlux(I, K) = 0.d0
+        PLUME(ng) % heatFlux(I, K) = 0.d0
+        PLUME(ng) % tendT(I, K) = 0.d0
+        PLUME(ng) % tendS(I, K) = 0.d0
       ELSE
 !
 ! To convert from melt rate (m s^-1) to freshwater flux (kg m^-2 s^-1)
 !
-        PLUME(ng) % fwFlux(K) = -(PLUME(ng) % mAm(K))*rho_ice
+        PLUME(ng) % fwFlux(I, K) = &
+          & -(PLUME(ng) % mAm(I, K)) * &
+          & RHO(PLUME(ng) % tB(I, K), &
+          &     PLUME(ng) % sB(I, K), &
+          &     PLUME(ng) % zR(I, K))
 !
 ! Latent heat required to melt that much ice (W m^-2)
 !
-        PLUME(ng) % heatFlux(K) = -(PLUME(ng) % fwFlux(K))*L
+        PLUME(ng) % heatFlux(I, K) = -(PLUME(ng) % fwFlux(I, K))*L
 !
 ! If there is a plume, some of the freshwater is entrained into the
 ! plume. Scale fwFlux accordingly
 !
-        plumeAreaInCell = PLUME(ng) % a(K) - PLUME(ng) % a(K-1)
-        IF ((plumeAreaInCell .GT. 0) .AND. (correctMeltEnt)) THEN
-            PLUME(ng) % fwFlux(K) = &
-              & (PLUME(ng) % fwFlux(K))*(1-meltEnt)
-        ENDIF
+!         plumeAreaInCell = &
+!           & PLUME(ng) % a(I, K) - PLUME(ng) % a(I, K-1)
+!         IF ((plumeAreaInCell .GT. 0) .AND. (correctMeltEnt)) THEN
+!             PLUME(ng) % fwFlux(I, K) = &
+!               & (PLUME(ng) % fwFlux(I, K))*(1-meltEnt)
+!         ENDIF
 !
 ! Compute tendencies (as for pkg/icefront in MITgcm)
 !
-        PLUME(ng) % tendT(K) = &
-          & -(PLUME(ng) % heatFlux(K))/c_i/rho_ref
-        PLUME(ng) % tendS(K) = &
-          & (PLUME(ng) % fwFlux(K))*(PLUME(ng) % sAm(K))/rho_ref
+        PLUME(ng) % tendT(I, K) = &
+          & -(PLUME(ng) % heatFlux(I, K)) / c_i / rho_ref
+        PLUME(ng) % tendS(I, K) = &
+          & (PLUME(ng) % fwFlux(I, K)) * (PLUME(ng) % sAm(I, K)) / &
+          & rho_ref
 !
 ! Scale by icefrontlength, which is the ratio of the horizontal length
 ! of the ice front in each model grid cell divided by the grid cell
 ! area. (icefrontlength = dy / dxdy = 1 / dx)
 !
-        PLUME(ng) % tendT(K) = PLUME(ng) % tendT(K)/dx
-        PLUME(ng) % tendS(K) = PLUME(ng) % tendS(K)/dx
+        PLUME(ng) % tendT(I, K) = PLUME(ng) % tendT(I, K)/dx
+        PLUME(ng) % tendS(I, K) = PLUME(ng) % tendS(I, K)/dx
       ENDIF
     ENDDO
   ELSE
-    DO K = 1, Nr
-      PLUME(ng) % fwFlux(K) = 0.d0
-      PLUME(ng) % heatFlux(K) = 0.d0
-      PLUME(ng) % tendT(K) = 0.d0
-      PLUME(ng) % tendS(K) = 0.d0
+    DO K = 1, N(ng)
+      PLUME(ng) % fwFlux(I, K) = 0.d0
+      PLUME(ng) % heatFlux(I, K) = 0.d0
+      PLUME(ng) % tendT(I, K) = 0.d0
+      PLUME(ng) % tendS(I, K) = 0.d0
     ENDDO
   ENDIF
 END SUBROUTINE ICEPLUME_CALC
 !
 ! ==================================================================
 !
-SUBROUTINE ICEPLUME_CURVE_DET(ng, detr, detrDz)
+SUBROUTINE ICEPLUME_CURVE_DET(ng, I, &
+                            & iceDepthK, plumeDepthK, &
+                            & dx, dy, &
+                            & detr, detrDz)
   USE mod_iceplume
   implicit none
 !
 ! In/out variables
 !
-  integer, intent(in) :: ng
+  integer, intent(in) :: ng, I
+  integer, intent(in) :: iceDepthK, plumeDepthK
+  real(r8), intent(in) :: dx, dy
   real(r8), intent(in) :: detr
   real(r8), intent(inout) :: detrDz
 !
@@ -489,59 +511,62 @@ SUBROUTINE ICEPLUME_CURVE_DET(ng, detr, detrDz)
 ! For detrainment weight function
 !
   real(r8) :: detrVel
-  integer  :: KI, detrN, searchSwitch
   real(r8) :: detrWeight, detrWeightSum
+  integer  :: KI, detrN, searchSwitch
+  integer :: K, counter
 !
-      IF (checkCFL) THEN
+    IF (checkCFL) THEN
 !
 ! If activiated, check the horizontal advection CFL criteria to
 ! determine if to distribute the detrainment in several layers.
 !
 ! Calculate maxinum velocity based on the CFL criteria
 !
-        maxVel = CuMax*dx/dtr
-        minDetrDz = detr/(maxVel*dy)
-      ELSE
-        minDetrDz = 0.0d0
-      ENDIF
+      maxVel = CuMax*dx/dt(ng)
+      minDetrDz = detr/(maxVel*dy)
+    ELSE
+      minDetrDz = 0.0d0
+    ENDIF
 !
-      IF (checkRiB) THEN
+    IF (checkRiB) THEN
 !
 ! If activated, check the Richardson number criteria to determine
 ! if to distribute the detrainment in several layers.
 !
 ! Calculate Brunt-Vaisala frequency
 !
-        K = plumeDepthK
-        IF (K .EQ. Nr) THEN
-          rhoUp = RHO(PLUME(ng) % tAm(K), &
-                    & PLUME(ng) % sAm(K), &
-                    & PLUME(ng) % zW(K))
-        ELSE
-          rhoUp = RHO(0.5*(PLUME(ng) % tAm(K+1)+PLUME(ng) % tAm(K)), &
-                    & 0.5*(PLUME(ng) % sAm(K+1)+PLUME(ng) % sAm(K)), &
-                    & PLUME(ng) % zW(K))
-        ENDIF
-!
-        IF (K .EQ. 1) THEN
-          rhoDown = RHO(PLUME(ng) % tAm(1), &
-                      & PLUME(ng) % sAm(1), &
-                      & PLUME(ng) % zW(0))
-        ELSE
-          rhoDown = RHO(0.5*(PLUME(ng) % tAm(K-1) + &
-                           & PLUME(ng) % tAm(K)), &
-                      & 0.5*(PLUME(ng) % sAm(K-1) + &
-                           & PLUME(ng) % sAm(K)), &
-                      & PLUME(ng) % zW(K-1))
-        ENDIF
-        rho0 = 0.5*(rhoUp + rhoDown)
-        bvf = -g*(rhoUp-rhoDown)/(PLUME(ng) % dz(K)*rho0)
-        minDetrDz2 = (detr**2*RiBmin/bvf/(dy**2))**0.25
+      K = plumeDepthK
+      IF (K .EQ. N(ng)) THEN
+        rhoUp = RHO(PLUME(ng) % tAm(I, K), &
+                  & PLUME(ng) % sAm(I, K), &
+                  & PLUME(ng) % zW(I, K))
       ELSE
-        minDetrDz2 = 0.0d0
+        rhoUp = RHO(0.5*(PLUME(ng) % tAm(I, K+1) + &
+                  &      PLUME(ng) % tAm(I, K)), &
+                  & 0.5*(PLUME(ng) % sAm(I, K+1) + &
+                  &      PLUME(ng) % sAm(I, K)), &
+                  & PLUME(ng) % zW(I, K))
       ENDIF
 !
-      minDetrDz = MAX(minDetrDz, minDetrDz2)
+      IF (K .EQ. 1) THEN
+        rhoDown = RHO(PLUME(ng) % tAm(I, K), &
+                    & PLUME(ng) % sAm(I, K), &
+                    & PLUME(ng) % zW(I, K-1))
+      ELSE
+        rhoDown = RHO(0.5*(PLUME(ng) % tAm(I, K-1) + &
+                    &      PLUME(ng) % tAm(I, K)), &
+                    & 0.5*(PLUME(ng) % sAm(I, K-1) + &
+                    &      PLUME(ng) % sAm(I, K)), &
+                    & PLUME(ng) % zW(I, K-1))
+      ENDIF
+      rho0 = 0.5*(rhoUp + rhoDown)
+      bvf = -g*(rhoUp-rhoDown)/(PLUME(ng) % dz(I, K)*rho0)
+      minDetrDz2 = (detr**2*RiBmin/bvf/(dy**2))**0.25
+    ELSE
+      minDetrDz2 = 0.0d0
+    ENDIF
+!
+    minDetrDz = MAX(minDetrDz, minDetrDz2)
 !
 ! ==================================================================
 ! Distribute detrainmnet in several layers
@@ -554,20 +579,27 @@ SUBROUTINE ICEPLUME_CURVE_DET(ng, detr, detrDz)
 ! Initiate searchSwitch for depthFinder == 2
 !
     IF (depthFinder .EQ. 2) searchSwitch = 1
+      counter = 0
       DO WHILE (detrDz .LT. minDetrDz)
+        counter = counter + 1
+!
+! If detrDz is NaN, exit loop
+!
+        IF ((detrDz .EQ. (detrDz+1)) .OR. (counter .GT. 100)) EXIT
 !
         IF (depthFinder .EQ. 1) THEN
 !
 ! Search method 1, search one layer up until meet the surface
 ! Search for the nearest layer
 !
-          IF (PLUME(ng) % det(Nr) .EQ. 0.d0) THEN
+          IF (PLUME(ng) % det(I, N(ng)) .EQ. 0.d0) THEN
 !
-! If the plume has not yet reached the surface, search for one layer up
+! If the plume has not yet reached the surface, search for one layer
+! up
 !
-            DO K = 2,Nr
-              IF ((PLUME(ng) % detI(K) .EQ. 0) .and. &
-              & (PLUME(ng) % detI(K-1) .EQ. 1)) THEN
+            DO K = 2,N(ng)
+              IF ((PLUME(ng) % detI(I, K) .EQ. 0) .and. &
+                & (PLUME(ng) % detI(I, K-1) .EQ. 1)) THEN
                 KI = K
               ENDIF
             ENDDO
@@ -575,9 +607,9 @@ SUBROUTINE ICEPLUME_CURVE_DET(ng, detr, detrDz)
 !
 ! If the plume has reached surface, search for one layer down
 !
-            DO K = 1,Nr-1
-              IF ((PLUME(ng) % detI(K+1) .EQ. 1) .and. &
-              & (PLUME(ng) % detI(K) .EQ. 0)) THEN
+            DO K = 1,N(ng)-1
+              IF ((PLUME(ng) % detI(I, K+1) .EQ. 1) .and. &
+                & (PLUME(ng) % detI(I, K) .EQ. 0)) THEN
                 KI = K
               ENDIF
             ENDDO
@@ -588,14 +620,17 @@ SUBROUTINE ICEPLUME_CURVE_DET(ng, detr, detrDz)
 ! Search method 2, search one layer up then one layer down
 ! If the plume has reached surface, hard code searchSwitch to -1
 !
-          IF (PLUME(ng) % det(Nr) .GT. 0.d0) searchSwitch = -1
+          IF (PLUME(ng) % det(I, N(ng)) .GT. 0.d0) THEN
+            searchSwitch = -1
+          ENDIF
+!
           IF (searchSwitch .EQ. 1) THEN
 !
 ! Search one layer up
 !
-            DO K = 2,Nr
-              IF ((PLUME(ng) % detI(K) .EQ. 0) .and. &
-              & (PLUME(ng) % detI(K-1) .EQ. 1)) THEN
+            DO K = 2,N(ng)
+              IF ((PLUME(ng) % detI(I, K) .EQ. 0) .and. &
+                & (PLUME(ng) % detI(I, K-1) .EQ. 1)) THEN
                 KI = K
               ENDIF
             ENDDO
@@ -603,9 +638,9 @@ SUBROUTINE ICEPLUME_CURVE_DET(ng, detr, detrDz)
 !
 ! Search one layer down
 !
-            DO K = 1,Nr-1
-              IF ((PLUME(ng) % detI(K+1) .EQ. 1) .and. &
-              & (PLUME(ng) % detI(K) .EQ. 0)) THEN
+            DO K = 1,N(ng)-1
+              IF ((PLUME(ng) % detI(I, K+1) .EQ. 1) .and. &
+                & (PLUME(ng) % detI(I, K) .EQ. 0)) THEN
                 KI = K
               ENDIF
             ENDDO
@@ -622,8 +657,8 @@ SUBROUTINE ICEPLUME_CURVE_DET(ng, detr, detrDz)
 !
 ! Update detrainment layer flag and detrainment depth
 !
-        PLUME(ng) % detI(KI) = 1
-        detrDz = detrDz + PLUME(ng) % dz(KI)
+        PLUME(ng) % detI(I, KI) = 1
+        detrDz = detrDz + PLUME(ng) % dz(I, KI)
 !
 ! If KI is at the bottom of the plume, the search reaches the bottom and
 ! the barotropic velocity is possibly too large. Print the message to log
@@ -638,31 +673,31 @@ SUBROUTINE ICEPLUME_CURVE_DET(ng, detr, detrDz)
 !
 ! Update detrainment volume flux
 !
-      detrN = SUM(PLUME(ng) % detI)
+      detrN = SUM(PLUME(ng) % detI(I, :))
       IF (detrN .GT. 1) THEN
-        detrVel = detr/(dy*detrDz)
-        DO K = 1,Nr
-          IF (PLUME(ng) % detI(K) .EQ. 1) THEN
+        detrVel = detr / (dy * detrDz)
+        DO K = 1,N(ng)
+          IF (PLUME(ng) % detI(I, K) .EQ. 1) THEN
 !
 ! First, calculate weight using Gaussian function.
 !
             detrWeight = &
               & EXP(-1.0 * &
-              & (2*(real(K)-real(plumeDepthK))/real(detrN))**2)
-            PLUME(ng) % det(K) = detrWeight * detrVel * dy * &
-              & PLUME(ng) % dz(K)
+              & (2 * (real(K)-real(plumeDepthK)) / real(detrN))**2)
+            PLUME(ng) % det(I, K) = detrWeight * detrVel * dy * &
+              & PLUME(ng) % dz(I, K)
           ENDIF
         ENDDO
 !
 ! Normalize
 !
-        detrWeightSum = SUM(PLUME(ng) % det)
-        DO K = 1,Nr
-          PLUME(ng) % det(K) = PLUME(ng) % det(K) * &
+        detrWeightSum = SUM(PLUME(ng) % det(I, :))
+        DO K = 1,N(ng)
+          PLUME(ng) % det(I, K) = PLUME(ng) % det(I, K) * &
             & detr / detrWeightSum
         ENDDO
       ENDIF  ! detrN .GT. 1
-END SUBROUTINE
+END SUBROUTINE ICEPLUME_CURVE_DET
 !
 ! ====== Thess subroutines are taken from MITgcm ===================
 !

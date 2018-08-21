@@ -1,10 +1,9 @@
+MODULE mod_iceplume
 ! ==================================================================!
 !                                                                   !
 ! These are the core functions of ICEPLUME model.                   !
 !                                                                   !
 ! ==================================================================!
-!
-MODULE mod_iceplume
 !
 ! This module stores all global variables.
 !
@@ -31,30 +30,32 @@ MODULE mod_iceplume
   logical :: checkRiB            = .true.
   integer :: depthFinder         = 2
 !
-  integer :: ngr              ! nested grid ID
-  integer :: Nr               ! total number of layers
-  integer :: NTr              ! total number of tracers
-  real(r8) :: dy              ! grid cell resolution [m]
-  real(r8) :: dx              ! grid cell resolution [m]
-  real(r8) :: dtr             ! slow-mode time step [m],
-                              ! this is required when
-                              ! checkCFL is activated.
-!
-! grouding line / plume depth index
-!
-  integer :: iceDepthK                             
-  integer :: plumeDepthK                           
-!
-! Looping vars
-!
-  integer :: K  ! vertical layers
-  integer :: iTracer  ! tracer index
+!   integer :: ngr              ! nested grid ID
+!   integer :: Ir               ! SOURCES index ID
+!   integer :: Nr               ! total number of layers
+!   integer :: NTr              ! total number of tracers
+!   real(r8) :: dy              ! grid cell resolution [m]
+!   real(r8) :: dx              ! grid cell resolution [m]
+!   real(r8) :: dtr             ! slow-mode time step [m],
+!                               ! this is required when
+!                               ! checkCFL is activated.
+! !
+! ! grouding line / plume depth index
+! !
+!   integer :: iceDepthK                             
+!   integer :: plumeDepthK                           
+! !
+! ! Looping vars
+! !
+!   integer :: K  ! vertical layers
+!   integer :: iTracer  ! tracer index
 !
 ! ====================================================================
 !
 ! Model parameters
-  real(r8), parameter :: pi            = 4.0d0*atan(1.0d0)    ! Pi
-
+!
+  real(r8), parameter :: pi = 4.0d0*atan(1.0d0)    ! Pi
+!
 ! For plume model
 ! -------------- Parameters ------------------------------------------
 ! E_0 - entrainment rate (alpha)
@@ -110,16 +111,19 @@ MODULE mod_iceplume
 !
   real(r8), parameter :: meltEnt       = 5.d-1
 !
-  real(r8) :: CuMax = 0.8d0   ! maximum Cu number to triger ckeckCFL.
-  real(r8) :: RiBMin = 2.0d0  ! minimum Richardson number to triger
-                              ! checkRiB.
+! Maximum Cu number to triger ckeckCFL.
 !
-! ice bottom depth [m], if iceDepth is positive,
-! then the ice bottom depth is always equal to
-! the water depth (iceDepthK = 1)
+  real(r8) :: CuMax = 0.8d0
 !
-  real(r8) :: iceDepth = -800.d0
-!  real(r8) :: iceDepth = 1.d0
+! Minimum Richardson number to triger checkRiB.
+!
+  real(r8) :: RiBMin = 2.0d0
+!
+! Ice bottom depth [m], if iceDepth is positive, then the ice bottom
+! depth is always equal to the water depth (iceDepthK = 1)
+!
+!  real(r8) :: iceDepth = -800.d0
+  real(r8) :: iceDepth = 1.d0
 !
 ! ====================================================================
 ! Profiles
@@ -163,98 +167,113 @@ MODULE mod_iceplume
 ! trcCum        - accumulative passive tracer concentration
 ! trcIni        - initial passive tracer concentration in discharge
 ! ====================================================================
-  TYPE T_PLUME
-! plume model state.
-! Grid, ambient state.
-    real(r8), pointer :: zR(:)
-    real(r8), pointer :: tAm(:)
-    real(r8), pointer :: sAm(:)
-    real(r8), pointer :: vAm(:)
-    real(r8), pointer :: wAm(:)
-    real(r8), pointer :: tpAm(:)
-! Plume state.
-    real(r8), pointer :: zW(:)
-    real(r8), pointer :: r(:)
-    real(r8), pointer :: t(:)
-    real(r8), pointer :: s(:)
-    real(r8), pointer :: w(:)
-    real(r8), pointer :: a(:)
-    real(r8), pointer :: mInt(:)
-! Volume fluxes.
-    real(r8), pointer :: volFlux(:)
-    real(r8), pointer :: ent(:)
-    real(r8), pointer :: det(:)
-    integer(r8), pointer :: detI(:)
-! Melt rate, freshwater and heat fluxes.
-    real(r8), pointer :: mAv(:)
-    real(r8), pointer :: m(:)
-    real(r8), pointer :: mAm(:)
-    real(r8), pointer :: fwFlux(:)
-    real(r8), pointer :: heatFlux(:)
-! Tendency terms.
-    real(r8), pointer :: tendT(:)
-    real(r8), pointer :: tendS(:)
-! Other profiles.
-    real(r8), pointer :: dz(:)
-    real(r8), pointer :: tB(:)
-    real(r8), pointer :: sB(:)
-! Passive tracer concentration.
-    real(r8), pointer :: trcAm(:, :)
-    real(r8), pointer :: trc(:)
-    real(r8), pointer :: trcCum(:)
-    real(r8), pointer :: trcIni(:)
 !
-    real(r8), pointer :: rhoAm(:)
-    real(r8), pointer :: rho(:)
+  TYPE T_PLUME
+!
+! Grid, ambient state.
+!
+    real(r8), pointer :: zR(:, :)
+    real(r8), pointer :: tAm(:, :)
+    real(r8), pointer :: sAm(:, :)
+    real(r8), pointer :: vAm(:, :)
+    real(r8), pointer :: wAm(:, :)
+    real(r8), pointer :: tpAm(:, :)
+    real(r8), pointer :: rhoAm(:, :)
+!
+! Plume state.
+!
+    real(r8), pointer :: zW(:, :)
+    real(r8), pointer :: r(:, :)
+    real(r8), pointer :: t(:, :)
+    real(r8), pointer :: s(:, :)
+    real(r8), pointer :: w(:, :)
+    real(r8), pointer :: a(:, :)
+    real(r8), pointer :: mInt(:, :)
+    real(r8), pointer :: rho(:, :)
+!
+! Volume fluxes.
+!
+    real(r8), pointer :: volFlux(:, :)
+    real(r8), pointer :: ent(:, :)
+    real(r8), pointer :: det(:, :)
+    integer(r8), pointer :: detI(:, :)
+!
+! Melt rate, freshwater and heat fluxes.
+!
+    real(r8), pointer :: mAv(:, :)
+    real(r8), pointer :: m(:, :)
+    real(r8), pointer :: mAm(:, :)
+    real(r8), pointer :: fwFlux(:, :)
+    real(r8), pointer :: heatFlux(:, :)
+!
+! Tendency terms.
+!
+    real(r8), pointer :: tendT(:, :)
+    real(r8), pointer :: tendS(:, :)
+!
+! Other profiles.
+!
+    real(r8), pointer :: dz(:, :)
+    real(r8), pointer :: tB(:, :)
+    real(r8), pointer :: sB(:, :)
+!
+! Passive tracer concentration.
+!
+    real(r8), pointer :: trcAm(:, :, :)
+    real(r8), pointer :: trc(:, :)
+    real(r8), pointer :: trcCum(:, :)
+    real(r8), pointer :: trcIni(:, :)
   END TYPE T_PLUME
 !
   TYPE (T_PLUME), allocatable :: PLUME(:)
-
+!
 ! ===================================================================
+!
   CONTAINS
     SUBROUTINE allocate_iceplume(ng)
       integer :: ng
-      IF (ng .EQ. 1) allocate(PLUME(Ngrids))
+      IF (ng .EQ. 1) allocate( PLUME(Ngrids) )
+!
 ! Allocate profiles
-        allocate(PLUME(ng) % zR(N(ng)))
-        allocate(PLUME(ng) % tAm(N(ng)))
-        allocate(PLUME(ng) % sAm(N(ng)))
-        allocate(PLUME(ng) % vAm(N(ng)))
-        allocate(PLUME(ng) % wAm(N(ng)))
-        allocate(PLUME(ng) % tpAm(N(ng)))
 !
-        allocate(PLUME(ng) % zW(0:N(ng)))
-        allocate(PLUME(ng) % r(0:N(ng)))
-        allocate(PLUME(ng) % t(0:N(ng)))
-        allocate(PLUME(ng) % s(0:N(ng)))
-        allocate(PLUME(ng) % w(0:N(ng)))
-        allocate(PLUME(ng) % a(0:N(ng)))
-        allocate(PLUME(ng) % mInt(0:N(ng)))
+        allocate( PLUME(ng) % zR(Nsrc(ng), N(ng)) )
+        allocate( PLUME(ng) % tAm(Nsrc(ng), N(ng)) )
+        allocate( PLUME(ng) % sAm(Nsrc(ng), N(ng)) )
+        allocate( PLUME(ng) % vAm(Nsrc(ng), N(ng)) )
+        allocate( PLUME(ng) % wAm(Nsrc(ng), N(ng)) )
+        allocate( PLUME(ng) % tpAm(Nsrc(ng), N(ng)) )
+        allocate( PLUME(ng) % rhoAm(Nsrc(ng), N(ng)) )
 !
-        allocate(PLUME(ng) % volFlux(0:N(ng)))
-        allocate(PLUME(ng) % ent(N(ng)))
-        allocate(PLUME(ng) % det(N(ng)))
-        allocate(PLUME(ng) % detI(N(ng)))
+        allocate( PLUME(ng) % zW(Nsrc(ng), 0:N(ng)) )
+        allocate( PLUME(ng) % r(Nsrc(ng), 0:N(ng)) )
+        allocate( PLUME(ng) % t(Nsrc(ng), 0:N(ng)) )
+        allocate( PLUME(ng) % s(Nsrc(ng), 0:N(ng)) )
+        allocate( PLUME(ng) % w(Nsrc(ng), 0:N(ng)) )
+        allocate( PLUME(ng) % a(Nsrc(ng), 0:N(ng)) )
+        allocate( PLUME(ng) % mInt(Nsrc(ng), 0:N(ng)) )
+        allocate( PLUME(ng) % rho(Nsrc(ng), 0:N(ng)) )
 !
-        allocate(PLUME(ng) % mAv(N(ng)))
-        allocate(PLUME(ng) % m(N(ng)))
-        allocate(PLUME(ng) % mAm(N(ng)))
-        allocate(PLUME(ng) % fwFlux(N(ng)))
-        allocate(PLUME(ng) % heatFlux(N(ng)))
+        allocate( PLUME(ng) % volFlux(Nsrc(ng), 0:N(ng)) )
+        allocate( PLUME(ng) % ent(Nsrc(ng), N(ng)) )
+        allocate( PLUME(ng) % det(Nsrc(ng), N(ng)) )
+        allocate( PLUME(ng) % detI(Nsrc(ng), N(ng)) )
 !
-        allocate(PLUME(ng) % tendT(N(ng)))
-        allocate(PLUME(ng) % tendS(N(ng)))
+        allocate( PLUME(ng) % mAv(Nsrc(ng), N(ng)) )
+        allocate( PLUME(ng) % m(Nsrc(ng), N(ng)) )
+        allocate( PLUME(ng) % mAm(Nsrc(ng), N(ng)) )
+        allocate( PLUME(ng) % fwFlux(Nsrc(ng), N(ng)) )
+        allocate( PLUME(ng) % heatFlux(Nsrc(ng), N(ng)) )
 !
-        allocate(PLUME(ng) % dz(N(ng)))
-        allocate(PLUME(ng) % tB(N(ng)))
-        allocate(PLUME(ng) % sB(N(ng)))
+        allocate( PLUME(ng) % tendT(Nsrc(ng), N(ng)) )
+        allocate( PLUME(ng) % tendS(Nsrc(ng), N(ng)) )
 !
-        allocate(PLUME(ng) % trcAm(N(ng), NT(ng)))
-        allocate(PLUME(ng) % trc(NT(ng)))
-        allocate(PLUME(ng) % trcCum(NT(ng)))
-        allocate(PLUME(ng) % trcIni(NT(ng)))
+        allocate( PLUME(ng) % dz(Nsrc(ng), N(ng)) )
+        allocate( PLUME(ng) % tB(Nsrc(ng), N(ng)) )
+        allocate( PLUME(ng) % sB(Nsrc(ng), N(ng)) )
 !
-        allocate(PLUME(ng) % rhoAm(N(ng)))
-        allocate(PLUME(ng) % rho(0:N(ng)))
+        allocate( PLUME(ng) % trcAm(Nsrc(ng), N(ng), NT(ng)) )
+        allocate( PLUME(ng) % trc(Nsrc(ng), NT(ng)) )
+        allocate( PLUME(ng) % trcCum(Nsrc(ng), NT(ng)) )
+        allocate( PLUME(ng) % trcIni(Nsrc(ng), NT(ng)) )
     END SUBROUTINE allocate_iceplume
 END

@@ -8,12 +8,14 @@
 ! Program to calculate the plume shape, S, T, V etc.
 ! ==================================================================
 !
-SUBROUTINE iceplume_plume_model(ng, rIni, tIni, sIni)
+SUBROUTINE ICEPLUME_PLUME_MODEL(ng, I, dy, &
+                              & iceDepthK, &
+                              & rIni, tIni, sIni)
 !
   USE mod_iceplume
   implicit none
-  integer, intent(in) :: ng
-  real(r8), intent(in) :: rIni, tIni, sIni
+  integer, intent(in) :: ng, I, iceDepthK
+  real(r8), intent(in) :: dy, rIni, tIni, sIni
 !
 ! ==================================================================
 ! Local variables for ODEPACK
@@ -22,16 +24,20 @@ SUBROUTINE iceplume_plume_model(ng, rIni, tIni, sIni)
   integer :: IOPT, ISTATE, ITASK, ITOL, IWORK(20), LIW, LRW, MF, NEQ
   real(r8), parameter :: RTOL = 1.0d-5
   real(r8), parameter :: ATOL = 1.0d-5
-  real(r8) :: RWORK(116), Y(6)
+  real(r8) :: RWORK(116), Y(9)
   real(r8) :: zIn, zOut
+  integer :: K
 !
 ! Y is input/output vector for DLSODE
-!   Y(1) = plume thickness/radius
-!   Y(2) = plume velocity
-!   Y(3) = plume temperature
-!   Y(4) = plume salinity
-!   Y(5) = plume area
-!   Y(6) = area integrated melt
+!   Y(1) - plume thickness/radius
+!   Y(2) - plume velocity
+!   Y(3) - plume temperature
+!   Y(4) - plume salinity
+!   Y(5) - plume area
+!   Y(6) - area integrated melt
+!   Y(7) - fake variable to pass in ng
+!   Y(8) - fake variable to pass in I
+!   Y(9) - fake variable to pass in dy
 !
 ! ==================================================================
 ! Other local variables
@@ -40,8 +46,8 @@ SUBROUTINE iceplume_plume_model(ng, rIni, tIni, sIni)
   real(r8) :: RHO, temperature, salinity, depth
   real(r8) :: tAmbient, sAmbient
   real(r8) :: rhoPlume, rhoAmbient
-  real(r8) :: vAmbient, wAmbient, meanVel, meltAmbient
-  real(r8) :: plumeAreaInCell, plumeMass, meltMass
+!  real(r8) :: vAmbient, wAmbient, meanVel, meltAmbient
+!  real(r8) :: plumeAreaInCell, plumeMass, meltMass
   real(r8) :: sB, tB
 !
 ! Plume models
@@ -76,47 +82,49 @@ SUBROUTINE iceplume_plume_model(ng, rIni, tIni, sIni)
   Y(5) = 0.0   ! integrated contact area
   Y(6) = 0.0   ! integrated melt rate
 !
+  Y(7) = REAL(ng)  ! fake variable to pass in ng
+  Y(8) = REAL(I)   ! fake variable to pass in I
+  Y(9) = dy        ! fake variable to pass in I
+!
 ! Prepare profiles
 !
-  DO K = 0, Nr
-    PLUME(ng) % r(K) = 0.0
-    PLUME(ng) % w(K) = 0.0
-    PLUME(ng) % t(K) = 0.0
-    PLUME(ng) % s(K) = 0.0
-    PLUME(ng) % a(K) = 0.0
-    PLUME(ng) % mInt(K) = 0.0
-    PLUME(ng) % rho(K) = 0.0
+  DO K = 0, N(ng)
+    PLUME(ng) % r(I, K) = 0.0
+    PLUME(ng) % w(I, K) = 0.0
+    PLUME(ng) % t(I, K) = 0.0
+    PLUME(ng) % s(I, K) = 0.0
+    PLUME(ng) % a(I, K) = 0.0
+    PLUME(ng) % mInt(I, K) = 0.0
   ENDDO
-  DO K = 1, Nr
-    PLUME(ng) % zR(K) = 0.5d0 * (PLUME(ng) % zW(K-1) + &
-      &                          PLUME(ng) % zW(K))
+  DO K = 1, N(ng)
+    PLUME(ng) % zR(I, K) = 0.5d0 * (PLUME(ng) % zW(I, K-1) + &
+      &                             PLUME(ng) % zW(I, K))
   ENDDO
 !
-  plumeDepthK = 0
   rhoPlume = 0.d0
 !
 ! Start at bottom of ice face
 !
-  zIn = PLUME(ng) % zW(iceDepthK)
+  zIn = PLUME(ng) % zW(I, iceDepthK)
 !
 ! Next point at which to retrieve values
 !
-  zOut = PLUME(ng) % zW(iceDepthK+1)
+  zOut = PLUME(ng) % zW(I, iceDepthK+1)
 !
 ! Set initial conditions
 !
-  PLUME(ng) % r(iceDepthK) = Y(1)
-  PLUME(ng) % w(iceDepthK) = Y(2)
-  PLUME(ng) % t(iceDepthK) = Y(3)
-  PLUME(ng) % s(iceDepthK) = Y(4)
-  PLUME(ng) % a(iceDepthK) = Y(5)
-  PLUME(ng) % mInt(iceDepthK) = Y(6)
+  PLUME(ng) % r(I, iceDepthK) = Y(1)
+  PLUME(ng) % w(I, iceDepthK) = Y(2)
+  PLUME(ng) % t(I, iceDepthK) = Y(3)
+  PLUME(ng) % s(I, iceDepthK) = Y(4)
+  PLUME(ng) % a(I, iceDepthK) = Y(5)
+  PLUME(ng) % mInt(I, iceDepthK) = Y(6)
 !
 ! ==================================================================
 ! Move up through water column from lowest layer
 ! ==================================================================
 !
-  DO K = iceDepthK+1, Nr
+  DO K = iceDepthK+1, N(ng)
 !
 ! Replicate current depth
 !
@@ -161,19 +169,21 @@ SUBROUTINE iceplume_plume_model(ng, rIni, tIni, sIni)
 ! Calculate ambient density
 !
       IF (K .EQ. 0) THEN
-        tAmbient = PLUME(ng) % tAm(1)
-        sAmbient = PLUME(ng) % sAm(1)
-      ELSEIF (K .EQ. Nr) THEN
-        tAmbient = PLUME(ng) % tAm(Nr)
-        sAmbient = PLUME(ng) % sAm(Nr)
+        tAmbient = PLUME(ng) % tAm(I, 1)
+        sAmbient = PLUME(ng) % sAm(I, 1)
+      ELSEIF (K .EQ. N(ng)) THEN
+        tAmbient = PLUME(ng) % tAm(I, N(ng))
+        sAmbient = PLUME(ng) % sAm(I, N(ng))
       ELSE
-        tAmbient = .5*(PLUME(ng) % tAm(K) + PLUME(ng) % tAm(K+1))
-        sAmbient = .5*(PLUME(ng) % sAm(K) + PLUME(ng) % sAm(K+1))
+        tAmbient = .5*(PLUME(ng) % tAm(I, K) + &
+                     & PLUME(ng) % tAm(I, K+1))
+        sAmbient = .5*(PLUME(ng) % sAm(I, K) + &
+                     & PLUME(ng) % sAm(I, K+1))
       ENDIF
       rhoAmbient = RHO(tAmbient, sAmbient, depth)
 !
-      IF ((rhoPlume .GT. rhoAmbient) .OR. &
-        & (K .EQ. Nr)) THEN
+      IF ( (rhoPlume .GT. rhoAmbient) .OR. &
+         & (K .EQ. N(ng)) ) THEN
         ISTATE = -1
       ENDIF
 !
@@ -193,62 +203,62 @@ SUBROUTINE iceplume_plume_model(ng, rIni, tIni, sIni)
 ! at which to calculate the next value and loop round to call the plume
 ! model again. Make sure we're not at the surface
 !
-        IF (K .NE. Nr) THEN
+        IF (K .NE. N(ng)) THEN
           zIn = zOut
-          zOut = PLUME(ng) % zW(K+1)
+          zOut = PLUME(ng) % zW(I, K+1)
         ENDIF
       ENDIF
 !
-! ==================================================================
-! Make corrections for background melt water entrainment.
-! (halfcone model only)
-! ==================================================================
-!
-! Assuming some portion of the melt water is entrained into the plume,
-! the acutual temperature and salinity should be lower in plume due to
-! this extra entrainment. This section calculates background melting,
-! calculates melt water entrainment and updates T & S in plume using a
-! conservative mixing scheme.
-!
-      IF ((useConePlume) .AND. (correctMeltEnt)) THEN
-!
-! Check if plume has risen / extends to the whole grid
-!
-        IF ((K .GT. 0) .AND. (2.0*Y(1) .LT. dy)) THEN
-          tAmbient = PLUME(ng) % tAm(K)
-          sAmbient = PLUME(ng) % sAm(K)
-          vAmbient = PLUME(ng) % vAm(K)
-          wAmbient = PLUME(ng) % wAm(K)
-          meanVel = (vAmbient**2 + wAmbient**2)**0.5
-!
-! Calculate background melt rate [m s^-1]
-!
-          CALL iceplume_meltrate(tAmbient,       &
-                               & sAmbient,       &
-                               & meanVel, depth, &
-                               & meltAmbient, sB, tB)
-!
-! Calculate freshwater flux from melt water [kg s^-1]
-!
-          plumeAreaInCell = Y(5) - PLUME(ng) % a(K-1)
-          meltMass = &
-            & meltEnt * meltAmbient * rho_ice * &
-            & (dy*(PLUME(ng) % dz(K)) - plumeAreaInCell)
-!
-! Calculate plume mass [kg s^-1]
-!
-          plumeMass = 0.5 * pi * Y(1)**2 * Y(2) * rhoPlume
-!
-! Update plume temperature and salinity with conservative mixing
-!
-          Y(3) = &
-            & (Y(3)*plumeMass+tB*meltMass) / &
-            & (plumeMass+meltMass)
-          Y(4) = &
-            & (Y(4)*plumeMass+sB*meltMass) / &
-            & (plumeMass+meltMass)
-        ENDIF
-      ENDIF
+! ! ==================================================================
+! ! Make corrections for background melt water entrainment.
+! ! (halfcone model only)
+! ! ==================================================================
+! !
+! ! Assuming some portion of the melt water is entrained into the plume,
+! ! the acutual temperature and salinity should be lower in plume due to
+! ! this extra entrainment. This section calculates background melting,
+! ! calculates melt water entrainment and updates T & S in plume using a
+! ! conservative mixing scheme.
+! !
+!       IF ((useConePlume) .AND. (correctMeltEnt)) THEN
+! !
+! ! Check if plume has risen / extends to the whole grid
+! !
+!         IF ((K .GT. 0) .AND. (2.0*Y(1) .LT. dy)) THEN
+!           tAmbient = PLUME(ng) % tAm(I, K)
+!           sAmbient = PLUME(ng) % sAm(I, K)
+!           vAmbient = PLUME(ng) % vAm(I, K)
+!           wAmbient = PLUME(ng) % wAm(I, K)
+!           meanVel = (vAmbient**2 + wAmbient**2)**0.5
+! !
+! ! Calculate background melt rate [m s^-1]
+! !
+!           CALL ICEPLUME_MELTRATE(tAmbient,       &
+!                                & sAmbient,       &
+!                                & meanVel, depth, &
+!                                & meltAmbient, sB, tB)
+! !
+! ! Calculate freshwater flux from melt water [kg s^-1]
+! !
+!           plumeAreaInCell = Y(5) - PLUME(ng) % a(I, K-1)
+!           meltMass = &
+!             & meltEnt * meltAmbient * RHO(tB, sB, depth) * &
+!             & (dy*(PLUME(ng) % dz(I, K)) - plumeAreaInCell)
+! !
+! ! Calculate plume mass [kg s^-1]
+! !
+!           plumeMass = 0.5 * pi * Y(1)**2 * Y(2) * rhoPlume
+! !
+! ! Update plume temperature and salinity with conservative mixing
+! !
+!           Y(3) = &
+!             & (Y(3)*plumeMass+tB*meltMass) / &
+!             & (plumeMass+meltMass)
+!           Y(4) = &
+!             & (Y(4)*plumeMass+sB*meltMass) / &
+!             & (plumeMass+meltMass)
+!         ENDIF
+!       ENDIF
 !
     ELSE  ! (ISTATE .LE. -1)
 !
@@ -267,21 +277,16 @@ SUBROUTINE iceplume_plume_model(ng, rIni, tIni, sIni)
 ! Save results
 ! ==================================================================
 !
-    PLUME(ng) % r(K) = Y(1)
-    PLUME(ng) % w(K) = Y(2)
-    PLUME(ng) % t(K) = Y(3)
-    PLUME(ng) % s(K) = Y(4)
-    PLUME(ng) % a(K) = Y(5)
-    PLUME(ng) % mInt(K) = Y(6)
-!
-!    write(*, *)  K, &
-!      & PLUME(ng) % zW(K), &
-!      & PLUME(ng) % s(K), sAmbient, &
-!      & PLUME(ng) % t(K), tAmbient, &
-!      & PLUME(ng) % r(K)
+    PLUME(ng) % r(I, K) = Y(1)
+    PLUME(ng) % w(I, K) = Y(2)
+    PLUME(ng) % t(I, K) = Y(3)
+    PLUME(ng) % s(I, K) = Y(4)
+    PLUME(ng) % a(I, K) = Y(5)
+    PLUME(ng) % mInt(I, K) = Y(6)
 !
   ENDDO
-END
+  RETURN
+END SUBROUTINE iceplume_plume_model
 !
 ! ==================================================================!
 !                                                                   !
@@ -289,7 +294,7 @@ END
 !                                                                   !
 ! ==================================================================!
 !
-SUBROUTINE iceplume_meltrate(temperature, salinity, &
+SUBROUTINE ICEPLUME_MELTRATE(temperature, salinity, &
                            & velocity, depth, &
                            & mdot, Sb, Tb)
 !
@@ -307,7 +312,7 @@ SUBROUTINE iceplume_meltrate(temperature, salinity, &
 !
   IF ( velocity .LT. backgroundVel ) velocity = backgroundVel
 !
-  absVelocity = abs(velocity)
+  absVelocity = ABS(velocity)
 !
 ! Calculate melt rate from 3 equation formualtion (as for plume models)
 ! Equations for Sb, Tb and mdot
@@ -338,23 +343,29 @@ SUBROUTINE  HALFCONE (NEQ, T, Y, YDOT)
   implicit none
 !
   integer :: NEQ
-  real(r8) :: T, Y(6), YDOT(6)
+  real(r8) :: T, Y(9), YDOT(9)
   real(r8) :: Tambient, Sambient, rho_0, rho_1
   real(r8) :: mdot, Sb, Tb
   real(r8) :: a, b, c
   real(r8) :: RHO
+  integer :: ng, I
 !
 ! Interpolate from imposed ambient profiles
 !
-  IF (T .LE. PLUME(ngr) % zR(1)) THEN
-    Tambient = PLUME(ngr) % tAm(1)
-    Sambient = PLUME(ngr) % sAm(1)
-  ELSEIF (T .GE. PLUME(ngr) % zR(Nr)) THEN
-    Tambient = PLUME(ngr) % tAm(Nr)
-    Sambient = PLUME(ngr) % sAm(Nr)
+  ng = int(Y(7))
+  I = int(Y(8))
+!
+  IF (T .LE. PLUME(ng) % zR(I, 1)) THEN
+    Tambient = PLUME(ng) % tAm(I, 1)
+    Sambient = PLUME(ng) % sAm(I, 1)
+  ELSEIF (T .GE. PLUME(ng) % zR(I, N(ng))) THEN
+    Tambient = PLUME(ng) % tAm(I, N(ng))
+    Sambient = PLUME(ng) % sAm(I, N(ng))
   ELSE
-    CALL LININT(Nr, PLUME(ngr) % zR, PLUME(ngr) % tAm, T, Tambient)
-    CALL LININT(Nr, PLUME(ngr) % zR, PLUME(ngr) % sAm, T, Sambient)
+    CALL LININT(N(ng), PLUME(ng) % zR(I, :), &
+              & PLUME(ng) % tAm(I, :), T, Tambient)
+    CALL LININT(N(ng), PLUME(ng) % zR(I, :), &
+              & PLUME(ng) % sAm(I, :), T, Sambient)
   ENDIF
 !
   rho_1 = RHO(Y(3), Y(4), T)
@@ -377,7 +388,7 @@ SUBROUTINE  HALFCONE (NEQ, T, Y, YDOT)
 ! Differential equations
 ! Plume radius
 !
-  YDOT(1) = 2.*E_0+4.*mdot/(pi*Y(2)) - &
+  YDOT(1) = 2.*E_0+4.*mdot/(pi*Y(2))- &
           & Y(1)*g*(rho_0-rho_1)/(2.*Y(2)*Y(2)*rho_ref)+2.*Cd/pi
 !
 ! Plume vertical velocity
@@ -411,23 +422,31 @@ SUBROUTINE  JENKINS (NEQ, T, Y, YDOT)
   implicit none
 !
   integer ::  NEQ
-  real(r8) :: T, Y(6), YDOT(6)
+  real(r8) :: T, Y(9), YDOT(9)
   real(r8) :: Tambient, Sambient, rho_0, rho_1
   real(r8) :: mdot, Sb, Tb
   real(r8) :: a,b,c
   real(r8) :: RHO
+  integer :: ng, I
+  real(r8) :: dy
 !
 ! Interpolate from imposed ambient profiles
 !
-  IF (T .LE. PLUME(ngr) % zR(1)) THEN
-    Tambient = PLUME(ngr) % tAm(1)
-    Sambient = PLUME(ngr) % sAm(1)
-  ELSEIF (T .GE. PLUME(ngr) % zR(Nr)) THEN
-    Tambient = PLUME(ngr) % tAm(Nr)
-    Sambient = PLUME(ngr) % sAm(Nr)
+  ng = int(Y(7))
+  I = int(Y(8))
+  dy = Y(9)
+!
+  IF (T .LE. PLUME(ng) % zR(I, 1)) THEN
+    Tambient = PLUME(ng) % tAm(I, 1)
+    Sambient = PLUME(ng) % sAm(I, 1)
+  ELSEIF (T .GE. PLUME(ng) % zR(I, N(ng))) THEN
+    Tambient = PLUME(ng) % tAm(I, N(ng))
+    Sambient = PLUME(ng) % sAm(I, N(ng))
   ELSE
-    CALL LININT(Nr, PLUME(ngr) % zR, PLUME(ngr) % tAm, T, Tambient)
-    CALL LININT(Nr, PLUME(ngr) % zR, PLUME(ngr) % sAm, T, Sambient)
+    CALL LININT(N(ng), PLUME(ng) % zR(I, :), &
+              & PLUME(ng) % tAm(I, :), T, Tambient)
+    CALL LININT(N(ng), PLUME(ng) % zR(I, :), &
+              & PLUME(ng) % sAm(I, :), T, Sambient)
   ENDIF
 !
   rho_1 = RHO(Y(3), Y(4), T)

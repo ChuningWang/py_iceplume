@@ -75,3 +75,5 @@ for ti in range(nt):
 
 det = data['det']
 ent = data['ent']
+det[det==0] = np.NaN
+ent[ent==0] = np.NaN
