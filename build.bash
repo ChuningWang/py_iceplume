@@ -8,6 +8,6 @@ gfortran -c ./src/iceplume_core.f90
 gfortran -c ./src/iceplume_calc.f90
 gfortran -c ./src/iceplume.f90
 
-gfortran *.o -o iceplume_test.exe
+gfortran *.o -o ./iceplume_test.exe
 
 rm *.o *.mod

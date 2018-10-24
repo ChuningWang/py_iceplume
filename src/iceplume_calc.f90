@@ -170,6 +170,8 @@ SUBROUTINE ICEPLUME_CALC(ng, I, dx, dy, &
 ! If no subglacial discharge, then there is no plume
 !
     DO k = 1, N(ng)
+      PLUME(ng) % zR(I, K) = 0.5d0 * (PLUME(ng) % zW(I, K-1) + &
+        &                             PLUME(ng) % zW(I, K))
       PLUME(ng) % r(I, K) = 0.d0
       PLUME(ng) % w(I, K) = 0.d0
       PLUME(ng) % t(I, K) = 0.d0

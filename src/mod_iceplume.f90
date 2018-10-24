@@ -20,7 +20,7 @@ MODULE mod_iceplume
   logical :: useConePlume        = .true.
   logical :: useSheetPlume       = .false.
   logical :: conserveMass        = .false.
-  logical :: useBkgMelt          = .false.
+  logical :: useBkgMelt          = .true.
   logical :: correctMeltEnt      = .false.
   logical :: useTracers          = .true.
   logical :: useInputTracers     = .true.
@@ -104,6 +104,7 @@ MODULE mod_iceplume
 !
   real(r8), parameter :: GamT          = 2.20d-2
   real(r8), parameter :: GamS          = 6.20d-4
+!  real(r8), parameter :: Cd            = 6.50d-2
   real(r8), parameter :: Cd            = 2.50d-3
   real(r8), parameter :: backgroundVel = 1.d-2
 !
@@ -117,7 +118,7 @@ MODULE mod_iceplume
 !
 ! Minimum Richardson number to triger checkRiB.
 !
-  real(r8) :: RiBMin = 2.0d0
+  real(r8) :: RiBMin = 5.0d0
 !
 ! Ice bottom depth [m], if iceDepth is positive, then the ice bottom
 ! depth is always equal to the water depth (iceDepthK = 1)
