@@ -34,7 +34,7 @@ SUBROUTINE ICEPLUME_ENTRAIN(ng, I, iceDepthK,                           &
 !   Y(2)  - plume velocity
 !   Y(3)  - plume temperature
 !   Y(4)  - plume salinity
-!   Y(5)  - plume/glacier contact area
+!   Y(5)  - integrated plume/glacier contact area
 !   Y(6)  - area integrated melt
 !   Y(7)  - fake variable to pass in ng
 !   Y(8)  - fake variable to pass in I
@@ -150,12 +150,12 @@ SUBROUTINE ICEPLUME_ENTRAIN(ng, I, iceDepthK,                           &
 ! Test to see if neutral buoyancy has now been reached. If solver   !
 ! returns ISTATE = -1, then it has been unable to meet required     !
 ! tolerances at this level. This generally occurs because plume     !
-! has reached neutral buoyancy and run out of momentum, and so is no!
-! longer rising. At this point, we therefore end the call to the    !
-! plume model. Our aim is to catch the plume at the point of neutral!
-! buoyancy. We therefore perform a manual comparrison of ambient and!
-! plume density. If plume density >= ambient density we assign      !
-! ISTATE = -1, again ending the call to the plume model.            !
+! has reached neutral buoyancy and run out of momentum, and so is   !
+! no longer rising. At this point, we therefore end the call to the !
+! plume model. Our aim is to catch the plume at the point of        !
+! neutral buoyancy. We therefore perform a manual comparrison of    !
+! ambient and plume density. If plume density >= ambient density we !
+! assign ISTATE = -1, again ending the call to the plume model.     !
 ! ==================================================================!
 !
 ! Calculate plume density (rho = RHO(temp, salt, depth))
@@ -176,8 +176,7 @@ SUBROUTINE ICEPLUME_ENTRAIN(ng, I, iceDepthK,                           &
       ENDIF
       rhoA = RHO(tA, sA, zIn)
 !
-      IF ( (PLUME(ng) % rho(I, K) .GT. rhoA) .OR.                       &
-         & (K .EQ. N(ng)) ) THEN
+      IF ( (Y(2) .LE. 0.0d0) .OR. (K .EQ. N(ng)) ) THEN
         ISTATE = -1
       ENDIF
 !
@@ -217,7 +216,7 @@ SUBROUTINE ICEPLUME_ENTRAIN(ng, I, iceDepthK,                           &
     ENDIF
 !
 ! ==================================================================!
-! Save results                                                      !
+! Save results.                                                     !
 ! ==================================================================!
 !
     PLUME(ng) % f(I, K) = Y(1)
@@ -233,8 +232,7 @@ END SUBROUTINE ICEPLUME_ENTRAIN
 !
 ! ==================================================================!
 !                                                                   !
-! Plume models. These functions are modified from Dr. Tom Cowton's  !
-! model scripts.                                                    !
+! Plume models.                                                     !
 !                                                                   !
 ! ==================================================================!
 !
@@ -252,74 +250,86 @@ SUBROUTINE GENERAL_ENTRAIN_MODEL (NEQ, T, Y, YDOT)
   real(r8) :: mdot, a, b, c
   real(r8) :: Lm, Lc
 !
+! Check if velcoity is positive
+!
+  IF (Y(2) .LE. 0.0d0) THEN
+    YDOT(1) = 0.0d0
+    YDOT(2) = 0.0d0
+    YDOT(3) = 0.0d0
+    YDOT(4) = 0.0d0
+    YDOT(5) = 0.0d0
+    YDOT(6) = 0.0d0
+  ELSE
+!
 ! Interpolate from imposed ambient profiles
 !
-  ng    = INT(Y(7))
-  I     = INT(Y(8))
-  sgTyp = INT(Y(9))
-  sgLen = Y(10)
+    ng    = INT(Y(7))
+    I     = INT(Y(8))
+    sgTyp = INT(Y(9))
+    sgLen = Y(10)
 !
-  IF (T .LE. PLUME(ng) % zR(I, 1)) THEN
-    tA = PLUME(ng) % tAm(I, 1)
-    sA = PLUME(ng) % sAm(I, 1)
-  ELSEIF (T .GE. PLUME(ng) % zR(I, N(ng))) THEN
-    tA = PLUME(ng) % tAm(I, N(ng))
-    sA = PLUME(ng) % sAm(I, N(ng))
-  ELSE
-    CALL LININT(N(ng), PLUME(ng) % zR(I, :),                            &
-              & PLUME(ng) % tAm(I, :), T, tA)
-    CALL LININT(N(ng), PLUME(ng) % zR(I, :),                            &
-              & PLUME(ng) % sAm(I, :), T, sA)
-  ENDIF
+    IF (T .LE. PLUME(ng) % zR(I, 1)) THEN
+      tA = PLUME(ng) % tAm(I, 1)
+      sA = PLUME(ng) % sAm(I, 1)
+    ELSEIF (T .GE. PLUME(ng) % zR(I, N(ng))) THEN
+      tA = PLUME(ng) % tAm(I, N(ng))
+      sA = PLUME(ng) % sAm(I, N(ng))
+    ELSE
+      CALL LININT(N(ng), PLUME(ng) % zR(I, :),                          &
+                & PLUME(ng) % tAm(I, :), T, tA)
+      CALL LININT(N(ng), PLUME(ng) % zR(I, :),                          &
+                & PLUME(ng) % sAm(I, :), T, sA)
+    ENDIF
 !
 ! Calculate reduced gravity
 !
-  rhoP = RHO(Y(3), Y(4), T)
-  rhoA = RHO(tA, sA, T)
-  gRed  = g*(rhoA-rhoP)/rhoRef
+    rhoP = RHO(Y(3), Y(4), T)
+    rhoA = RHO(tA, sA, T)
+    gRed  = g*(rhoA-rhoP)/rhoRef
 !
 ! Calculate plume metrics
 !
-  CALL PLUME_METRICS (sgTyp, Y(1)/Y(2), sgLen, Lm, Lc)
+    CALL PLUME_METRICS (sgTyp, Y(1)/Y(2), sgLen, Lm, Lc)
 !
 ! Equations for sB, tB and mdot
 !
-  a = lambda1*(GamT*cW - GamS*cI)
-  b = GamS*cI*(lambda1*Y(4) - lambda2 - lambda3*T +                     &
-      &        tIce - (L/cI)) -                                         &
-      &        GamT*cW*(Y(3) - lambda2 - lambda3*T + sIce)
-  c = GamS*Y(4)*(cI*(lambda2 + lambda3*T - tIce) + L) +                 &
-    & GamT*sIce*cW*(Y(3) - lambda2 - lambda3*T)
+    a = lambda1*(GamT*cW - GamS*cI)
+    b = GamS*cI*(lambda1*Y(4) - lambda2 - lambda3*T +                   &
+        &        tIce - (L/cI)) -                                       &
+        &        GamT*cW*(Y(3) - lambda2 - lambda3*T + sIce)
+    c = GamS*Y(4)*(cI*(lambda2 + lambda3*T - tIce) + L) +               &
+      & GamT*sIce*cW*(Y(3) - lambda2 - lambda3*T)
 !
-  sB   = (1./(2.*a))*(-b - SQRT(b**2. - 4.*a*c))
-  tB   = lambda1*sB + lambda2 + lambda3*T
-  mdot = GamS*SQRT(Cd)*Y(2)*(Y(4) - sB)/sB
+    sB   = (1./(2.*a))*(-b - SQRT(b**2. - 4.*a*c))
+    tB   = lambda1*sB + lambda2 + lambda3*T
+    mdot = GamS*SQRT(Cd)*Y(2)*(Y(4) - sB)/sB
 !
 ! Plume volume flux
 !
-  YDOT(1) = alpha*Lc*Y(2) + Lm*mdot
+    YDOT(1) = alpha*Lc*Y(2) + Lm*mdot
 !
 ! Plume vertical velocity
 !
-  YDOT(2) = (1./Y(1))*(-Y(2)*YDOT(1) + gRed*Y(1)/Y(2) -                 &
-    &                  Cd*Lm*Y(2)**2)
+    YDOT(2) = (1./Y(1))*(-Y(2)*YDOT(1) + gRed*Y(1)/Y(2) -               &
+      &                  Cd*Lm*Y(2)**2)
 !
 ! Plume temperature
 !
-  YDOT(3) = (1./Y(1))*(-Y(3)*YDOT(1) + alpha*Lc*Ta*Y(2) +               &
-    &                  Lm*mdot*tB -                                     &
-    &                  SQRT(Cd)*GamT*Lm*Y(2)*(Y(3)-tB))
+    YDOT(3) = (1./Y(1))*(-Y(3)*YDOT(1) + alpha*Lc*Ta*Y(2) +             &
+      &                  Lm*mdot*tB -                                   &
+      &                  SQRT(Cd)*GamT*Lm*Y(2)*(Y(3)-tB))
 !
 ! Plume salinity
 !
-  YDOT(4) = (1./Y(1))*(-Y(4)*YDOT(1) + alpha*Lc*Sa*Y(2) +               &
-    &                  Lm*mdot*sB -                                     &
-    &                  SQRT(Cd)*GamS*Lm*Y(2)*(Y(4)-sB))
+    YDOT(4) = (1./Y(1))*(-Y(4)*YDOT(1) + alpha*Lc*Sa*Y(2) +             &
+      &                  Lm*mdot*sB -                                   &
+      &                  SQRT(Cd)*GamS*Lm*Y(2)*(Y(4)-sB))
 !
 ! Along-plume integrated contact area and melt rate
 !
-  YDOT(5) = Lm
-  YDOT(6) = Lm*mdot
+    YDOT(5) = Lm
+    YDOT(6) = Lm*mdot
+  ENDIF
 !
 END SUBROUTINE GENERAL_ENTRAIN_MODEL
 !

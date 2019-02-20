@@ -11,6 +11,7 @@ PROGRAM iceplume
   real(r8) :: dx, dy
   real(r8) :: fIni, sIni, tIni, trcIni
   real(r8) :: sgTyp, sgDep, sgLen
+  real(r8) :: RHO
 !
 ! Local variable declarations.
 !
@@ -64,8 +65,8 @@ PROGRAM iceplume
 !
   open(unit=5, file='./inputs/iceplume_zr.txt')
   DO K = 1, Nr
-    read(5, *)  PLUME(ng) % tAm(I, K), PLUME(ng) % sAm(I, K), &
-              & PLUME(ng) % vAm(I, K), PLUME(ng) % wAm(I, K), &
+    read(5, *)  PLUME(ng) % tpAm(I, K), PLUME(ng) % sAm(I, K),  &
+              & PLUME(ng) % vAm(I, K), PLUME(ng) % wAm(I, K),   &
               & PLUME(ng) % trcAm(I, K, 3)
   ENDDO
   close(unit=5)
@@ -76,7 +77,7 @@ PROGRAM iceplume
     IF (usePotTemp) THEN
       prRef = 101.d3*1.d-4
       pr = prRef + &
-        & (abs(PLUME(ng) % zW(I, K))*rho_ref*g)*1.d-4  ! [dbar]
+        & (abs(PLUME(ng) % zW(I, K))*rhoRef*g)*1.d-4  ! [dbar]
       CALL SW_TEMP(PLUME(ng) % sAm(I, K),  &
                  & PLUME(ng) % tpAm(I, K), &
                  & pr, prRef, PLUME(ng) % tAm(I, K))
@@ -114,12 +115,12 @@ PROGRAM iceplume
   DO K = 1, Nr
     PLUME(ng) % rhoAm(I, K) = RHO(PLUME(ng) % tAm(I, K), &
                                 & PLUME(ng) % sAm(I, K), &
-                                & PLUME(ng) % zR(I, K)) - 1000.d0
+                                & PLUME(ng) % zR(I, K)) - 1000.0d0
   ENDDO
   DO K = 0, Nr
     PLUME(ng) % rho(I, K) = RHO(PLUME(ng) % t(I, K), &
                               & PLUME(ng) % s(I, K), &
-                              & PLUME(ng) % zW(I, K)) - 1000.d0
+                              & PLUME(ng) % zW(I, K)) - 1000.0d0
   ENDDO
   write(*, *)  'Writing output to files...'
 !
