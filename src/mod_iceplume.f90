@@ -8,9 +8,7 @@ MODULE mod_iceplume
 ! This module stores all global variables.
 !
   USE mod_kinds
-  USE mod_param, ONLY: Ngrids, N, NT
-  USE mod_scalars, ONLY: isalt, itemp, dt
-  USE mod_sources, ONLY: Nsrc
+  USE mod_py_iceplume
   implicit none
 !
 ! ====================================================================!

@@ -4,11 +4,12 @@
 *.out
 *.tiff
 *.o
+*.mod
 *.exe
+*.txt
+*.mat
 
-tidal_fjord/
 build/
 dist/
 data/
 figs/
-outputs/

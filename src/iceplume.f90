@@ -8,8 +8,9 @@ PROGRAM iceplume
 !
   integer :: ng = 1
   integer :: I = 1
-  real(r8) :: Qbar = 250.0d0, Qt = 0.0d0, Qs = 0.0d0
   real(r8) :: dx, dy
+  real(r8) :: fIni, sIni, tIni, trcIni
+  real(r8) :: sgTyp, sgDep, sgLen
 !
 ! Local variable declarations.
 !
@@ -21,11 +22,23 @@ PROGRAM iceplume
 !
   write(*, *)  ''
   write(*, *)  '==================================================='
-  write(*, *)  'ICEPLUME Stand-alone Version'
+  write(*, *)  'ICEPLUME Stand-alone Model'
   write(*, *)  'v1.0'
-  write(*, *)  'Chuning Wang'
+  write(*, *)  'Chuning Wang, chuning@marine.rutgers.edu'
   write(*, *)  '==================================================='
   write(*, *)  ''
+!
+! ==================================================================
+! Read in some scalar parameters
+! ==================================================================
+!
+  open(unit=5, file='./inputs/iceplume_scalar.txt')
+  read(5, *)  N(ng), dx, dy, dt(ng),    &
+            & fIni, sIni, tIni, trcIni, &
+            & sgTyp, sgDep, sgLen
+  close(unit=5)
+  Nr = N(ng)
+  NTr = NT(ng)
 !
 ! ==================================================================
 ! Allocate variables
@@ -34,72 +47,32 @@ PROGRAM iceplume
   CALL allocate_iceplume(ng)
 !
 ! ==================================================================
-! Read in some scalar parameters
-! ==================================================================
-!
-  Nr = N(ng)
-  NTr = NT(ng)
-  dy = 200.0d0
-  dx = 200.0d0
-!
-! ==================================================================
 ! Read in profiles from OCEAN.
 ! ==================================================================
 !
-  write(*, *)  'Read input profiles'
+  write(*, *)  'Reading input data...'
 !
 ! zw
 !
-  open(unit=5, file='./data/iceplume_zw.txt')
+  open(unit=5, file='./inputs/iceplume_zw.txt')
   DO K = 0, Nr
     read(5, *)  PLUME(ng) % zW(I, K)
   ENDDO
   close(unit=5)
 !
-! temp and salt
+! zr
 !
-  open(unit=5, file='./data/iceplume_s.txt')
+  open(unit=5, file='./inputs/iceplume_zr.txt')
   DO K = 1, Nr
-    read(5, *)  PLUME(ng) % sAm(I, K)
+    read(5, *)  PLUME(ng) % tAm(I, K), PLUME(ng) % sAm(I, K), &
+              & PLUME(ng) % vAm(I, K), PLUME(ng) % wAm(I, K), &
+              & PLUME(ng) % trcAm(I, K, 3)
   ENDDO
   close(unit=5)
-  open(unit=5, file='./data/iceplume_t.txt')
-  DO K = 1, Nr
-    read(5, *)  PLUME(ng) % tpAm(I, K)
-  ENDDO
-  close(unit=5)
-!
-! u/v, w
-!
-  open(unit=5, file='./data/iceplume_v.txt')
-  DO K = 1, Nr
-    read(5, *)  PLUME(ng) % vAm(I, K)
-  ENDDO
-  close(unit=5)
-  open(unit=5, file='./data/iceplume_w.txt')
-  DO K = 1, Nr
-    read(5, *)  PLUME(ng) % wAm(I, K)
-  ENDDO
-  close(unit=5)
-!
-! Qini
-!
-  open(unit=5, file='./data/iceplume_qini.txt')
-  read(5, *)  Qbar
-  close(unit=5)
-!
-! tracers
-!
-  open(unit=5, file='./data/iceplume_dye01.txt')
-  DO K = 1, Nr
-    read(5, *)  PLUME(ng) % trcAm(I, K, 3)
-  ENDDO
-  close(unit=5)
-!
-  DO K = 1, Nr
 !
 ! convert potential temp to in-situ temp
 !
+  DO K = 1, Nr
     IF (usePotTemp) THEN
       prRef = 101.d3*1.d-4
       pr = prRef + &
@@ -116,7 +89,7 @@ PROGRAM iceplume
 !
   IF (useTracers .and. useInputTracers) THEN
     DO iTracer = 3, NTr
-      PLUME(ng) % trcIni(I, iTracer) = 0.0d0
+      PLUME(ng) % trcIni(I, iTracer) = trcIni
     ENDDO
   ELSE
     DO iTracer = 3, NTr
@@ -128,9 +101,11 @@ PROGRAM iceplume
 ! Call main function
 ! ==================================================================
 !
-  write(*, *)  'Call ICEPLUME main function'
+  write(*, *)  'Calculating ICEPLUME...'
 !
-  CALL iceplume_calc(ng, I, dx, dy, Qbar, Qt, Qs)
+  CALL ICEPLUME_CALC(ng, I, dx, dy,       &
+                   & fIni, tIni, sIni,    &
+                   & sgTyp, sgDep, sgLen)
 !
 ! ==================================================================
 ! Write to file
@@ -146,31 +121,30 @@ PROGRAM iceplume
                               & PLUME(ng) % s(I, K), &
                               & PLUME(ng) % zW(I, K)) - 1000.d0
   ENDDO
-  write(*, *)  'Write output to files'
+  write(*, *)  'Writing output to files...'
 !
-  open(unit=15, file='./outputs/plume_out_zw.txt')
-  write(15, '(A3, 99 A20)')  'lev', 'zW', &
-    & 't', 's', 'r', 'w', 'a', 'mInt', 'volFlux', 'rho'
+  open(unit=15, file='./outputs/iceplume_zw.txt')
+  write(15, '(A4, 99 A20)')  'lev', 'zW',                 &
+    & 'f', 'w', 't', 's', 'a', 'mInt', 'rho'
   DO K = 0, Nr
     write(15, '(I4, 99 E20.8)')  K, PLUME(ng) % zW(I, K), &
-      & PLUME(ng) % t(I, K), PLUME(ng) % s(I, K), &
-      & PLUME(ng) % r(I, K), PLUME(ng) % w(I, K), &
-      & PLUME(ng) % a(I, K), PLUME(ng) % mInt(I, K), &
-      & PLUME(ng) % volFlux(I, K), PLUME(ng) % rho(I, K)
+      & PLUME(ng) % f(I, K), PLUME(ng) % w(I, K),         &
+      & PLUME(ng) % t(I, K), PLUME(ng) % s(I, K),         &
+      & PLUME(ng) % a(I, K), PLUME(ng) % mInt(I, K),      &
+      & PLUME(ng) % rho(I, K)
   ENDDO
   close(unit=15)
-  open(unit=15, file='./outputs/plume_out_zr.txt')
-  write(15, '(A3, 99 A20)')  'lev', 'zR', &
-    & 'tAm', 'sAm', 'vAm', 'wAm', 'ent', 'det', &
-    & 'fwFlux', 'heatFlux', 'rhoAm', 'mAv', 'm', 'mAm'
+  open(unit=15, file='./outputs/iceplume_zr.txt')
+  write(15, '(A4, 99 A20)')  'lev', 'zR',                 &
+    & 'ent', 'det', 'tAm', 'sAm', 'vAm', 'wAm',           &
+    & 'rhoAm', 'm', 'mB'
   DO K = 1, Nr
     write(15, '(I4, 99 E20.8)')  K, PLUME(ng) % zR(I, K), &
-      & PLUME(ng) % tAm(I, K), PLUME(ng) % sAm(I, K), &
-      & PLUME(ng) % vAm(I, K), PLUME(ng) % wAm(I, K), &
-      & PLUME(ng) % ent(I, K), PLUME(ng) % det(I, K), &
-      & PLUME(ng) % fwFlux(I, K), PLUME(ng) % heatFlux(I, K), &
-      & PLUME(ng) % rhoAm(I, K), PLUME(ng) % mAv(I, K), &
-      & PLUME(ng) % m(I, K), PLUME(ng) % mAm(I, K)
+      & PLUME(ng) % ent(I, K), PLUME(ng) % det(I, K),     &
+      & PLUME(ng) % tAm(I, K), PLUME(ng) % sAm(I, K),     &
+      & PLUME(ng) % vAm(I, K), PLUME(ng) % wAm(I, K),     &
+      & PLUME(ng) % rhoAm(I, K), PLUME(ng) % m(I, K),     &
+      & PLUME(ng) % mB(I, K)
   ENDDO
   close(unit=15)
 END PROGRAM

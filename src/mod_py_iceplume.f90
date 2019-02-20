@@ -1,4 +1,4 @@
-MODULE mod_iceplume_py
+MODULE mod_py_iceplume
   USE mod_kinds
   implicit none
   integer, parameter :: Ngrids = 1
@@ -7,8 +7,8 @@ MODULE mod_iceplume_py
 !
   integer, parameter :: Nsrc(1) = [1]
   integer, parameter :: NT(1) = [3]
-  integer, parameter :: N(1) = [40]
-  real(r8), parameter :: dt(1) = [30.0d0]
+  integer            :: N(1)
+  real(r8)           :: dt(1)
 !
   logical, parameter :: usePotTemp = .true.
 END MODULE
