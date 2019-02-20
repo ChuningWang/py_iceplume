@@ -82,6 +82,12 @@ PROGRAM iceplume
   ENDDO
   close(unit=5)
 !
+! Qini
+!
+  open(unit=5, file='./data/iceplume_qini.txt')
+  read(5, *)  Qbar
+  close(unit=5)
+!
 ! tracers
 !
   open(unit=5, file='./data/iceplume_dye01.txt')
@@ -143,10 +149,10 @@ PROGRAM iceplume
   write(*, *)  'Write output to files'
 !
   open(unit=15, file='./outputs/plume_out_zw.txt')
-  write(15, '(A3, 99 A12)')  'lev', 'zW', &
+  write(15, '(A3, 99 A20)')  'lev', 'zW', &
     & 't', 's', 'r', 'w', 'a', 'mInt', 'volFlux', 'rho'
   DO K = 0, Nr
-    write(15, '(I4, 99 E16.8)')  K, PLUME(ng) % zW(I, K), &
+    write(15, '(I4, 99 E20.8)')  K, PLUME(ng) % zW(I, K), &
       & PLUME(ng) % t(I, K), PLUME(ng) % s(I, K), &
       & PLUME(ng) % r(I, K), PLUME(ng) % w(I, K), &
       & PLUME(ng) % a(I, K), PLUME(ng) % mInt(I, K), &
@@ -154,16 +160,17 @@ PROGRAM iceplume
   ENDDO
   close(unit=15)
   open(unit=15, file='./outputs/plume_out_zr.txt')
-  write(15, '(A3, 99 A12)')  'lev', 'zR', &
+  write(15, '(A3, 99 A20)')  'lev', 'zR', &
     & 'tAm', 'sAm', 'vAm', 'wAm', 'ent', 'det', &
-    & 'fwFlux', 'heatFlux', 'rhoAm'
+    & 'fwFlux', 'heatFlux', 'rhoAm', 'mAv', 'm', 'mAm'
   DO K = 1, Nr
-    write(15, '(I4, 99 E16.8)')  K, PLUME(ng) % zR(I, K), &
+    write(15, '(I4, 99 E20.8)')  K, PLUME(ng) % zR(I, K), &
       & PLUME(ng) % tAm(I, K), PLUME(ng) % sAm(I, K), &
       & PLUME(ng) % vAm(I, K), PLUME(ng) % wAm(I, K), &
       & PLUME(ng) % ent(I, K), PLUME(ng) % det(I, K), &
       & PLUME(ng) % fwFlux(I, K), PLUME(ng) % heatFlux(I, K), &
-      & PLUME(ng) % rhoAm(I, K)
+      & PLUME(ng) % rhoAm(I, K), PLUME(ng) % mAv(I, K), &
+      & PLUME(ng) % m(I, K), PLUME(ng) % mAm(I, K)
   ENDDO
   close(unit=15)
 END PROGRAM

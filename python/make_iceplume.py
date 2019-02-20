@@ -1,3 +1,4 @@
+import os
 import subprocess
 import matplotlib.pyplot as plt
 import numpy as np
@@ -36,6 +37,8 @@ zr = 0.5*(zw[1:] + zw[:-1])
 dz = np.diff(zw)
 dy = 200
 
+runoff = 1500.
+
 # ------------ load profiles -------------------------------------------
 data = io.loadmat('../carroll_2017_JGR_oceans_initialTS.mat')
 depth_raw = np.array(data['depth']).squeeze()
@@ -57,16 +60,17 @@ np.savetxt('../data/iceplume_s.txt', salt)
 np.savetxt('../data/iceplume_v.txt', v)
 np.savetxt('../data/iceplume_w.txt', w)
 np.savetxt('../data/iceplume_dye01.txt', dye01)
+np.savetxt('../data/iceplume_qini.txt', np.array([runoff]))
 
 # ------------ build and run the executable ----------------------------
-subprocess.call('../build.bash', shell=True)
-subprocess.call('../iceplume_test.exe', shell=True)
+subprocess.call('cd ..; ./build.bash', shell=True)
+subprocess.call('cd ..; ./iceplume_test.exe', shell=True)
 
 # ------------ load results from txt files -----------------------------
 f = open('../outputs/plume_out_zr.txt', 'rb')
 header_zr = f.readline().split()
 f.close()
-data_zr = np.loadtxt('./outputs/plume_out_zr.txt', skiprows=1)
+data_zr = np.loadtxt('../outputs/plume_out_zr.txt', skiprows=1)
 f = open('../outputs/plume_out_zw.txt', 'rb')
 header_zw = f.readline().split()
 f.close()
