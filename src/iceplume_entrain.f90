@@ -190,6 +190,8 @@ SUBROUTINE ICEPLUME_ENTRAIN(ng, I, iceDepthK,                           &
 !
         Y(1) = 0.d0
         Y(2) = 0.d0
+        PLUME(ng) % lm(I, K) = PLUME(ng) % lm(I, K-1)
+        PLUME(ng) % lc(I, K) = PLUME(ng) % lc(I, K-1)
       ELSE
 !
 ! If the plume has not reached neutral buoyancy, then we assign a depth

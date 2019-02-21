@@ -38,6 +38,9 @@ dye01 = np.zeros(N)
 v = np.zeros(N)
 w = np.zeros(N)
 
+# temp = np.ones(N)*4
+# salt = np.ones(N)*30
+
 np.savetxt('../inputs/iceplume_zw.txt', np.array([zw]).T, fmt='%20.10e')
 np.savetxt('../inputs/iceplume_zr.txt',
         np.array([temp, salt, v, w, dye01]).T, fmt='%20.10e')
