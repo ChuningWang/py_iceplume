@@ -15,7 +15,7 @@ PROGRAM iceplume
 !
 ! Local variable declarations.
 !
-  real(r8) :: pr, prRef
+  real(r8) :: pr, prRef, Nreal
 !
 ! ==================================================================
 ! Write header information
@@ -34,10 +34,11 @@ PROGRAM iceplume
 ! ==================================================================
 !
   open(unit=5, file='./inputs/iceplume_scalar.txt')
-  read(5, *)  N(ng), dx, dy, dt(ng),    &
+  read(5, *)  Nreal, dx, dy, dt(ng),    &
             & fIni, sIni, tIni, trcIni, &
             & sgTyp, sgDep, sgLen
   close(unit=5)
+  N(ng) = INT(nreal)
   Nr = N(ng)
   NTr = NT(ng)
 !
@@ -106,7 +107,7 @@ PROGRAM iceplume
 !
   CALL ICEPLUME_CALC(ng, I, dx, dy,       &
                    & fIni, tIni, sIni,    &
-                   & sgTyp, sgDep, sgLen)
+                   & INT(sgTyp), sgDep, sgLen)
 !
 ! ==================================================================
 ! Write to file
@@ -147,5 +148,8 @@ PROGRAM iceplume
       & PLUME(ng) % rhoAm(I, K), PLUME(ng) % m(I, K),     &
       & PLUME(ng) % mB(I, K)
   ENDDO
+  close(unit=15)
+  open(unit=15, file='./outputs/iceplume_dye.txt')
+    write(15, '(99 E20.8)') PLUME(ng) % trc(I, :)
   close(unit=15)
 END PROGRAM

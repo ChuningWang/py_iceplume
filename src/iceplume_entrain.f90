@@ -1,7 +1,7 @@
 !
 ! ==================================================================!
 !                                                                   !
-! These are the core functions of  entrainment model.       !
+! These are the core functions of iceplume entrainment model.       !
 !                                                                   !
 ! ==================================================================!
 !
@@ -176,7 +176,8 @@ SUBROUTINE ICEPLUME_ENTRAIN(ng, I, iceDepthK,                           &
       ENDIF
       rhoA = RHO(tA, sA, zIn)
 !
-      IF ( (Y(2) .LE. 0.0d0) .OR. (K .EQ. N(ng)) ) THEN
+      IF ( (PLUME(ng) % rho(I, K) .GT. rhoA) .OR.                       &
+         & (K .EQ. N(ng)) ) THEN
         ISTATE = -1
       ENDIF
 !

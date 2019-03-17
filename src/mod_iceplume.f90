@@ -1,7 +1,7 @@
 MODULE mod_iceplume
 ! ==================================================================!
 !                                                                   !
-! These are the module functions of  model.                 !
+! These are the module functions of iceplume model.                 !
 !                                                                   !
 ! ==================================================================!
 !
@@ -20,8 +20,8 @@ MODULE mod_iceplume
 !
   logical :: useTracers          = .true.
   logical :: useInputTracers     = .true.
-  logical :: useBkgMelt          = .true.
-  logical :: useMeltTracers      = .true.
+  logical :: useBkgMelt          = .false.
+  logical :: useMeltTracers      = .false.
   logical :: checkCFL            = .true.
   logical :: checkRiB            = .true.
   integer :: depthFinder         = 2

@@ -1,4 +1,4 @@
-SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
+SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK,         &
      &                  ISTATE, IOPT, RWORK, LRW, IWORK, LIW, JAC, MF)
       EXTERNAL F, JAC
       INTEGER NEQ, ITOL, ITASK, ISTATE, IOPT, LRW, IWORK, LIW, MF
@@ -10,13 +10,13 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
       DOUBLE PRECISION DUMACH, DVNORM
 !
 !  Declare all other variables.
-      INTEGER INIT, MXSTEP, MXHNIL, NHNIL, NSLAST, NYH, IOWNS, &
-     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L, &
-     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER, &
+      INTEGER INIT, MXSTEP, MXHNIL, NHNIL, NSLAST, NYH, IOWNS,          &
+     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,                     &
+     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,               &
      &   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
-      INTEGER I, I1, I2, IFLAG, IMXER, KGO, LF0, &
+      INTEGER I, I1, I2, IFLAG, IMXER, KGO, LF0,                        &
      &   LENIW, LENRW, LENWM, ML, MORD, MU, MXHNL0, MXSTP0
-      DOUBLE PRECISION ROWNS, &
+      DOUBLE PRECISION ROWNS,                                           &
      &   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
       DOUBLE PRECISION ATOLI, AYI, BIG, EWTI, H0, HMAX, HMX, RH, RTOLI, &
      &   TCRIT, TDIST, TNEXT, TOL, TOLSF, TP, SIZE, SUM, W0
@@ -34,11 +34,11 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
 ! Groups of variables are replaced by dummy arrays in the Common
 ! declarations in routines where those variables are not used.
 !-----------------------------------------------------------------------
-      COMMON /DLS001/ ROWNS(209), &
-     &   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND, &
-     &   INIT, MXSTEP, MXHNIL, NHNIL, NSLAST, NYH, IOWNS(6), &
-     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L, &
-     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER, &
+      COMMON /DLS001/ ROWNS(209),                                       &
+     &   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,                 &
+     &   INIT, MXSTEP, MXHNIL, NHNIL, NSLAST, NYH, IOWNS(6),            &
+     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,                     &
+     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,               &
      &   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
 !
       DATA  MORD(1),MORD(2)/12,5/, MXSTP0/500/, MXHNL0/10/
@@ -175,7 +175,7 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
       IF (ITASK .NE. 4 .AND. ITASK .NE. 5) GO TO 110
       TCRIT = RWORK(1)
       IF ((TCRIT - TOUT)*(TOUT - T) .LT. 0.0D0) GO TO 625
-      IF (H0 .NE. 0.0D0 .AND. (T + H0 - TCRIT)*H0 .GT. 0.0D0) &
+      IF (H0 .NE. 0.0D0 .AND. (T + H0 - TCRIT)*H0 .GT. 0.0D0)           &
      &   H0 = TCRIT - T
  110  JSTART = 0
       IF (MITER .GT. 0) RWORK(LWM) = SQRT(UROUND)
@@ -322,8 +322,8 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
 !-----------------------------------------------------------------------
 !  CALL DSTODE(NEQ,Y,YH,NYH,YH,EWT,SAVF,ACOR,WM,IWM,F,JAC,DPREPJ,DSOLSY)
 !-----------------------------------------------------------------------
-      CALL DSTODE (NEQ, Y, RWORK(LYH), NYH, RWORK(LYH), RWORK(LEWT), &
-     &   RWORK(LSAVF), RWORK(LACOR), RWORK(LWM), IWORK(LIWM), &
+      CALL DSTODE (NEQ, Y, RWORK(LYH), NYH, RWORK(LYH), RWORK(LEWT),    &
+     &   RWORK(LSAVF), RWORK(LACOR), RWORK(LWM), IWORK(LIWM),           &
      &   F, JAC, DPREPJ, DSOLSY)
       KGO = 1 - KFLAG
       GO TO (300, 530, 540), KGO
@@ -556,8 +556,6 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
       RETURN
 !----------------------- END OF SUBROUTINE DLSODE ----------------------
       END
-
-
 !----------------------- SUBROUTINES -----------------------------------
       DOUBLE PRECISION FUNCTION DUMACH ()
 !***BEGIN PROLOGUE  DUMACH
@@ -586,7 +584,6 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
 !   19930818  Added SLATEC-format prologue.  (FNF)
 !   20030707  Added DUMSUM to force normal storage of COMP.  (ACH)
 !***END PROLOGUE  DUMACH
-
       DOUBLE PRECISION U, COMP
 !***FIRST EXECUTABLE STATEMENT  DUMACH
       U = 1.0D0
@@ -648,7 +645,7 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
       INTEGER METH
       INTEGER I, IB, NQ, NQM1, NQP1
       DOUBLE PRECISION ELCO, TESCO
-      DOUBLE PRECISION AGAMQ, FNQ, FNQM1, PC, PINT, RAGQ, &
+      DOUBLE PRECISION AGAMQ, FNQ, FNQM1, PC, PINT, RAGQ,               &
      &   RQFAC, RQ1FAC, TSIGN, XPIN
       DIMENSION ELCO(13,12), TESCO(3,12)
       DIMENSION PC(12)
@@ -774,17 +771,17 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
       INTEGER K, NYH, IFLAG
       DOUBLE PRECISION T, YH, DKY
       DIMENSION YH(NYH,*), DKY(*)
-      INTEGER IOWND, IOWNS, &
-     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L, &
-     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER, &
+      INTEGER IOWND, IOWNS,                                             &
+     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,                     &
+     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,               &
      &   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
-      DOUBLE PRECISION ROWNS, &
+      DOUBLE PRECISION ROWNS,                                           &
      &   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      COMMON /DLS001/ ROWNS(209), &
-     &   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND, &
-     &   IOWND(6), IOWNS(6), &
-     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L, &
-     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER, &
+      COMMON /DLS001/ ROWNS(209),                                       &
+     &   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,                 &
+     &   IOWND(6), IOWNS(6),                                            &
+     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,                     &
+     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,               &
      &   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER I, IC, J, JB, JB2, JJ, JJ1, JP1
       DOUBLE PRECISION C, R, S, TP
@@ -837,7 +834,7 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
       RETURN
 !----------------------- END OF SUBROUTINE DINTDY ----------------------
       END
-      SUBROUTINE DPREPJ (NEQ, Y, YH, NYH, EWT, FTEM, SAVF, WM, IWM, &
+      SUBROUTINE DPREPJ (NEQ, Y, YH, NYH, EWT, FTEM, SAVF, WM, IWM,     &
      &   F, JAC)
 !***BEGIN PROLOGUE  DPREPJ
 !***SUBSIDIARY
@@ -895,23 +892,23 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
       EXTERNAL F, JAC
       INTEGER NEQ, NYH, IWM
       DOUBLE PRECISION Y, YH, EWT, FTEM, SAVF, WM
-      DIMENSION NEQ(*), Y(*), YH(NYH,*), EWT(*), FTEM(*), SAVF(*), &
+      DIMENSION NEQ(*), Y(*), YH(NYH,*), EWT(*), FTEM(*), SAVF(*),      &
      &   WM(*), IWM(*)
-      INTEGER IOWND, IOWNS, &
-     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L, &
-     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER, &
+      INTEGER IOWND, IOWNS,                                             &
+     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,                     &
+     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,               &
      &   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
-      DOUBLE PRECISION ROWNS, &
+      DOUBLE PRECISION ROWNS,                                           &
      &   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      COMMON /DLS001/ ROWNS(209), &
-     &   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND, &
-     &   IOWND(6), IOWNS(6), &
-     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L, &
-     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER, &
+      COMMON /DLS001/ ROWNS(209),                                       &
+     &   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,                 &
+     &   IOWND(6), IOWNS(6),                                            &
+     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,                     &
+     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,               &
      &   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
-      INTEGER I, I1, I2, IER, II, J, J1, JJ, LENP, &
+      INTEGER I, I1, I2, IER, II, J, J1, JJ, LENP,                      &
      &   MBA, MBAND, MEB1, MEBAND, ML, ML3, MU, NP1
-      DOUBLE PRECISION CON, DI, FAC, HL0, R, R0, SRUR, YI, YJ, YJJ, &
+      DOUBLE PRECISION CON, DI, FAC, HL0, R, R0, SRUR, YI, YJ, YJJ,     &
      &   DVNORM
 !
 !***FIRST EXECUTABLE STATEMENT  DPREPJ
@@ -1077,17 +1074,17 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
       INTEGER IWM
       DOUBLE PRECISION WM, X, TEM
       DIMENSION WM(*), IWM(*), X(*), TEM(*)
-      INTEGER IOWND, IOWNS, &
-     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L, &
-     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER, &
+      INTEGER IOWND, IOWNS,                                             &
+     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,                     &
+     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,               &
      &   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
-      DOUBLE PRECISION ROWNS, &
+      DOUBLE PRECISION ROWNS,                                           &
      &   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      COMMON /DLS001/ ROWNS(209), &
-     &   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND, &
-     &   IOWND(6), IOWNS(6), &
-     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L, &
-     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER, &
+      COMMON /DLS001/ ROWNS(209),                                       &
+     &   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,                 &
+     &   IOWND(6), IOWNS(6),                                            &
+     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,                     &
+     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,               &
      &   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER I, MEBAND, ML, MU
       DOUBLE PRECISION DI, HL0, PHL0, R
@@ -1120,7 +1117,7 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
       RETURN
 !----------------------- END OF SUBROUTINE DSOLSY ----------------------
       END
-      SUBROUTINE DSTODE (NEQ, Y, YH, NYH, YH1, EWT, SAVF, ACOR, &
+      SUBROUTINE DSTODE (NEQ, Y, YH, NYH, YH1, EWT, SAVF, ACOR,         &
      &   WM, IWM, F, JAC, PJAC, SLVS)
 !***BEGIN PROLOGUE  DSTODE
 !***SUBSIDIARY
@@ -1217,23 +1214,23 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
       EXTERNAL F, JAC, PJAC, SLVS
       INTEGER NEQ, NYH, IWM
       DOUBLE PRECISION Y, YH, YH1, EWT, SAVF, ACOR, WM
-      DIMENSION NEQ(*), Y(*), YH(NYH,*), YH1(*), EWT(*), SAVF(*), &
+      DIMENSION NEQ(*), Y(*), YH(NYH,*), YH1(*), EWT(*), SAVF(*),       &
      &   ACOR(*), WM(*), IWM(*)
-      INTEGER IOWND, IALTH, IPUP, LMAX, MEO, NQNYH, NSLP, &
-     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L, &
-     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER, &
+      INTEGER IOWND, IALTH, IPUP, LMAX, MEO, NQNYH, NSLP,               &
+     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,                     &
+     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,               &
      &   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER I, I1, IREDO, IRET, J, JB, M, NCF, NEWQ
-      DOUBLE PRECISION CONIT, CRATE, EL, ELCO, HOLD, RMAX, TESCO, &
+      DOUBLE PRECISION CONIT, CRATE, EL, ELCO, HOLD, RMAX, TESCO,       &
      &   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION DCON, DDN, DEL, DELP, DSM, DUP, EXDN, EXSM, EXUP, &
+      DOUBLE PRECISION DCON, DDN, DEL, DELP, DSM, DUP, EXDN, EXSM, EXUP,&
      &   R, RH, RHDN, RHSM, RHUP, TOLD, DVNORM
-      COMMON /DLS001/ CONIT, CRATE, EL(13), ELCO(13,12), &
-     &   HOLD, RMAX, TESCO(3,12), &
-     &   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND, &
-     &   IOWND(6), IALTH, IPUP, LMAX, MEO, NQNYH, NSLP, &
-     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L, &
-     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER, &
+      COMMON /DLS001/ CONIT, CRATE, EL(13), ELCO(13,12),                &
+     &   HOLD, RMAX, TESCO(3,12),                                       &
+     &   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,                 &
+     &   IOWND(6), IALTH, IPUP, LMAX, MEO, NQNYH, NSLP,                 &
+     &   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,                     &
+     &   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,               &
      &   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
 !
 !***FIRST EXECUTABLE STATEMENT  DSTODE
@@ -1743,7 +1740,7 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
 !
 !***REFERENCES  J. J. Dongarra, J. R. Bunch, C. B. Moler, and G. W.
 !                 Stewart, LINPACK Users' Guide, SIAM, 1979.
-!***ROUTINES CALLED  DAXPY, DSCAL, IDAMAX
+!***ROUTINES CALLED  daxpy, DSCAL, IDAMAX
 !***REVISION HISTORY  (YYMMDD)
 !   780814  DATE WRITTEN
 !   890831  Modified array declarations.  (WRB)
@@ -1798,7 +1795,7 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
                   A(L,J) = A(K,J)
                   A(K,J) = T
    20          CONTINUE
-               CALL DAXPY(N-K,T,A(K+1,K),1,A(K+1,J),1)
+               CALL daxpy(N-K,T,A(K+1,K),1,A(K+1,J),1)
    30       CONTINUE
          GO TO 50
    40    CONTINUE
@@ -1893,7 +1890,7 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
 !
 !***REFERENCES  J. J. Dongarra, J. R. Bunch, C. B. Moler, and G. W.
 !                 Stewart, LINPACK Users' Guide, SIAM, 1979.
-!***ROUTINES CALLED  DAXPY, DSCAL, IDAMAX
+!***ROUTINES CALLED  daxpy, DSCAL, IDAMAX
 !***REVISION HISTORY  (YYMMDD)
 !   780814  DATE WRITTEN
 !   890531  Changed all specific intrinsics to generic.  (WRB)
@@ -1982,7 +1979,7 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
                   ABD(L,J) = ABD(MM,J)
                   ABD(MM,J) = T
    70          CONTINUE
-               CALL DAXPY(LM,T,ABD(M+1,K),1,ABD(MM+1,J),1)
+               CALL daxpy(LM,T,ABD(M+1,K),1,ABD(MM+1,J),1)
    80       CONTINUE
    90       CONTINUE
          GO TO 110
@@ -2054,7 +2051,7 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
 !
 !***REFERENCES  J. J. Dongarra, J. R. Bunch, C. B. Moler, and G. W.
 !                 Stewart, LINPACK Users' Guide, SIAM, 1979.
-!***ROUTINES CALLED  DAXPY, DDOT
+!***ROUTINES CALLED  daxpy, DDOT
 !***REVISION HISTORY  (YYMMDD)
 !   780814  DATE WRITTEN
 !   890831  Modified array declarations.  (WRB)
@@ -2084,7 +2081,7 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
                B(L) = B(K)
                B(K) = T
    10       CONTINUE
-            CALL DAXPY(N-K,T,A(K+1,K),1,B(K+1),1)
+            CALL daxpy(N-K,T,A(K+1,K),1,B(K+1),1)
    20    CONTINUE
    30    CONTINUE
 !
@@ -2094,7 +2091,7 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
             K = N + 1 - KB
             B(K) = B(K)/A(K,K)
             T = -B(K)
-            CALL DAXPY(K-1,T,A(1,K),1,B(1),1)
+            CALL daxpy(K-1,T,A(1,K),1,B(1),1)
    40    CONTINUE
       GO TO 100
    50 CONTINUE
@@ -2189,7 +2186,7 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
 !
 !***REFERENCES  J. J. Dongarra, J. R. Bunch, C. B. Moler, and G. W.
 !                 Stewart, LINPACK Users' Guide, SIAM, 1979.
-!***ROUTINES CALLED  DAXPY, DDOT
+!***ROUTINES CALLED  daxpy, DDOT
 !***REVISION HISTORY  (YYMMDD)
 !   780814  DATE WRITTEN
 !   890531  Changed all specific intrinsics to generic.  (WRB)
@@ -2223,7 +2220,7 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
                   B(L) = B(K)
                   B(K) = T
    10          CONTINUE
-               CALL DAXPY(LM,T,ABD(M+1,K),1,B(K+1),1)
+               CALL daxpy(LM,T,ABD(M+1,K),1,B(K+1),1)
    20       CONTINUE
    30    CONTINUE
 !
@@ -2236,7 +2233,7 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
             LA = M - LM
             LB = K - LM
             T = -B(K)
-            CALL DAXPY(LM,T,ABD(LA,K),1,B(LB),1)
+            CALL daxpy(LM,T,ABD(LA,K),1,B(LB),1)
    40    CONTINUE
       GO TO 100
    50 CONTINUE
@@ -2271,11 +2268,11 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
   100 CONTINUE
       RETURN
       END
-      SUBROUTINE DAXPY (N, DA, DX, INCX, DY, INCY)
-!***BEGIN PROLOGUE  DAXPY
+      SUBROUTINE daxpy (N, DA, DX, INCX, DY, INCY)
+!***BEGIN PROLOGUE  daxpy
 !***PURPOSE  Compute a constant times a vector plus a vector.
 !***CATEGORY  D1A7
-!***TYPE      DOUBLE PRECISION (SAXPY-S, DAXPY-D, CAXPY-C)
+!***TYPE      DOUBLE PRECISION (SAXPY-S, daxpy-D, CAXPY-C)
 !***KEYWORDS  BLAS, LINEAR ALGEBRA, TRIAD, VECTOR
 !***AUTHOR  Lawson, C. L., (JPL)
 !           Hanson, R. J., (SNLA)
@@ -2315,9 +2312,9 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
 !   891214  Prologue converted to Version 4.0 format.  (BAB)
 !   920310  Corrected definition of LX in DESCRIPTION.  (WRB)
 !   920501  Reformatted the REFERENCES section.  (WRB)
-!***END PROLOGUE  DAXPY
+!***END PROLOGUE  daxpy
       DOUBLE PRECISION DX(*), DY(*), DA
-!***FIRST EXECUTABLE STATEMENT  DAXPY
+!***FIRST EXECUTABLE STATEMENT  daxpy
       IF (N.LE.0 .OR. DA.EQ.0.0D0) RETURN
       IF (INCX .EQ. INCY) IF (INCX-1) 5,20,60
 !
@@ -2435,7 +2432,7 @@ SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK, &
       IF (N .LT. 5) RETURN
    40 MP1 = M + 1
       DO 50 I = MP1,N,5
-      DDOT = DDOT + DX(I)*DY(I) + DX(I+1)*DY(I+1) + DX(I+2)*DY(I+2) + &
+      DDOT = DDOT + DX(I)*DY(I) + DX(I+1)*DY(I+1) + DX(I+2)*DY(I+2) +   &
      &              DX(I+3)*DY(I+3) + DX(I+4)*DY(I+4)
    50 CONTINUE
       RETURN

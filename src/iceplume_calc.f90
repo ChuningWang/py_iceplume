@@ -38,6 +38,7 @@ SUBROUTINE ICEPLUME_CALC(ng, I, dx, dy,                                 &
 ! iceDepthK   - vertical grid index of grounding line depth         !
 ! plumeDepthK - vertical grid index of plume depth                  !
 ! osDepthK    - vertical grid index of overshoot depth              !
+! neutrDepthK - vertical grid index of neutral buoyant depth        !
 ! areaP       - surface area of plume in contact with ice in        !
 !               that cell [m^2]                                     !
 ! areaB       - surface area of plume in contact with ice out       !
@@ -58,7 +59,7 @@ SUBROUTINE ICEPLUME_CALC(ng, I, dx, dy,                                 &
   integer :: K, iTracer
   real(r8) :: RHO
 !
-  integer :: iceDepthK, plumeDepthK, osDepthK
+  integer :: iceDepthK, plumeDepthK, osDepthK, neutrDepthK
   real(r8) :: areaP, areaB
   real(r8) :: meanVel, depth
   real(r8) :: detr, detrDz
@@ -178,7 +179,8 @@ SUBROUTINE ICEPLUME_CALC(ng, I, dx, dy,                                 &
 ! Find detrainment depth index, Calculate total detrainment volume
 ! and thickness
 !
-    plumeDepthK = -1
+    plumeDepthK = iceDepthK+1
+    neutrDepthK = iceDepthK+1
     detrDz = 1.d-7
     DO K = iceDepthK+1,osDepthK
       IF ((PLUME(ng) % rho(I, osDepthK) .LT.                            &
@@ -187,21 +189,21 @@ SUBROUTINE ICEPLUME_CALC(ng, I, dx, dy,                                 &
         &  PLUME(ng) % rhoAm(I, K+1)         )) THEN
         plumeDepthK = K
       ENDIF
+      IF (PLUME(ng) % w(I, K) .GT. PLUME(ng) % w(I, K-1)) THEN
+        neutrDepthK = K+1
+      ENDIF
     ENDDO
+!
+! Spread detrainment in several layers.
+!
     PLUME(ng) % det(I, plumeDepthK) = detr
     PLUME(ng) % detI(I, plumeDepthK) = 1
     detrDz = detrDz + PLUME(ng) % dz(I, plumeDepthK)
-!
-! Use HALF parameterization to spread detrainment in several layers.
-!
-    CALL ICEPLUME_DETRAIN_HALF(ng, I,                                   &
-                            &  iceDepthK, plumeDepthK, dx,              &
-                            &  PLUME(ng) % lc(I, plumeDepthK),          &
-                            &  detr, detrDz)
   ELSE
     detr = 0.d0
     detrDz = 1.d-7
     plumeDepthK = iceDepthK+1
+    neutrDepthK = iceDepthK+1
   ENDIF  ! fini .GT. 0.0d0
 !
 ! ==================================================================!

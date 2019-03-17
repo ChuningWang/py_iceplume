@@ -1,14 +1,14 @@
 !
 ! ==================================================================!
 !                                                                   !
-! These are the core functions of  detrainment model.       !
+! These are the core functions of iceplume detrainment model.       !
 !                                                                   !
 ! ==================================================================!
 !
-SUBROUTINE ICEPLUME_DETRAIN(ng, I,                                      &
-                          & iceDepthK, plumeDepthK,                     &
-                          & dx, dy,                                     &
-                          & detr, detrDz)
+SUBROUTINE ICEPLUME_DETRAIN_FULL(ng, I,                                 &
+                               & iceDepthK, plumeDepthK,                &
+                               & dx, dy,                                &
+                               & detr, detrDz)
   USE mod_iceplume
   implicit none
 !
@@ -31,7 +31,7 @@ SUBROUTINE ICEPLUME_DETRAIN(ng, I,                                      &
   real(r8) :: detrWeight, detrWeightSum
   integer  :: KI, detrN, searchSwitch
   integer :: K, counter
-END SUBROUTINE ICEPLUME_DETRAIN
+END SUBROUTINE ICEPLUME_DETRAIN_FULL
 !
 ! ==================================================================!
 !                                                                   !

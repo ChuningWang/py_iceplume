@@ -19,7 +19,7 @@ sg_runoff = 200.
 sg_temp = 0.
 sg_salt = 0.
 sg_dye01 = 1.
-sg_typ = 3
+sg_typ = 10
 sg_dep = 1
 sg_len = 100.
 
@@ -38,8 +38,8 @@ dye01 = np.zeros(N)
 v = np.zeros(N)
 w = np.zeros(N)
 
-# temp = np.ones(N)*4
-# salt = np.ones(N)*30
+temp = np.ones(N)*4
+salt = np.ones(N)*30
 
 np.savetxt('../inputs/iceplume_zw.txt', np.array([zw]).T, fmt='%20.10e')
 np.savetxt('../inputs/iceplume_zr.txt',
