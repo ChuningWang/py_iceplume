@@ -137,11 +137,12 @@ PROGRAM iceplume
   ENDDO
   close(unit=15)
   open(unit=15, file='./outputs/iceplume_zr.txt')
-  write(15, '(A4, 99 A20)')  'lev', 'zR',                 &
+  write(15, '(A4, 99 A20)')  'lev', 'zR', 'dz',           &
     & 'ent', 'det', 'tAm', 'sAm', 'vAm', 'wAm',           &
     & 'rhoAm', 'm', 'mB'
   DO K = 1, Nr
-    write(15, '(I4, 99 E20.8)')  K, PLUME(ng) % zR(I, K), &
+    write(15, '(I4, 99 E20.8)')                           &
+      & K, PLUME(ng) % zR(I, K), PLUME(ng) % dz(I, K),    &
       & PLUME(ng) % ent(I, K), PLUME(ng) % det(I, K),     &
       & PLUME(ng) % tAm(I, K), PLUME(ng) % sAm(I, K),     &
       & PLUME(ng) % vAm(I, K), PLUME(ng) % wAm(I, K),     &

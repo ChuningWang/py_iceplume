@@ -1,70 +1,78 @@
 !
 ! ==================================================================!
 !                                                                   !
-! These are the core functions of iceplume detrainment model.       !
+! Use this function to calculate the velocity of detrainment.       !
 !                                                                   !
 ! ==================================================================!
 !
-SUBROUTINE ICEPLUME_DETRAIN_FULL(ng, I,                                 &
-                               & iceDepthK, plumeDepthK,                &
-                               & dx, dy,                                &
-                               & detr, detrDz)
+SUBROUTINE ICEPLUME_DETRAIN(ng, I,                                      &
+                          & iceDepthK, plumeDepthK,                     &
+                          & lc, detr)
   USE mod_iceplume
   implicit none
+!
+! ==================================================================!
+!                                                                   !
+! Input/Output variables:                                           !
+!                                                                   !
+! ==================================================================!
+!                                                                   !
+! ng          - grid identifier                                     !
+! I           - point source index identifier                       !
+! iceDepthK   - glacier grounding line depth vertical grid index    !
+! plumeDepthK - plume detrainment depth vertical grid index         !
+! lc          - plume/ocean contact length [m]                      !
+! detr        - detrainment volume flux [m^3 s^-1]                  !
+!                                                                   !
+! ==================================================================!
+!                                                                   !
+! Local variables:                                                  !
+!                                                                   !
+! ==================================================================!
+!                                                                   !
+! detrDz      - detrainment layer total thickness [m]               !
+! minDz       - minimum detrainment layer thickness [m]             !
+! maxVel      - maximum velocity based on Richardson number         !
+!               criterion [m s^-1]                                  !
+! Fr          - Froude number                                       !
+! rhoP        - plume density [kg m^-3]                             !
+! rho1        - upper layer density [kg m^-3]                       !
+! rho2        - lower layer density [kg m^-3]                       !
+! h1          - upper layer thickness [m]                           !
+! h2          - lower layer thickness [m]                           !
+! gRed        - reduced gravity [m s^-2]                            !
+! isSurface   - logical, if the plume discharge at surface          !
+!                                                                   !
+! udSwitch    - switch to determine search one layer up(1)/down(-1) !
+! potE        - potential energy of plume/ambient water             !
+!                                                                   !
+! detrVel     - detrainment velocity [m s^-1]                       !
+! detrWeight  - detrainment weight function                         !
+! detrSum     - detrainment volume flux before normalize [m^3 s^-1] !
+!                                                                   !
+! ==================================================================!
 !
 ! In/out variables
 !
   integer, intent(in) :: ng, I
   integer, intent(in) :: iceDepthK, plumeDepthK
-  real(r8), intent(in) :: dx, dy
-  real(r8), intent(in) :: detr
-  real(r8), intent(inout) :: detrDz
+  real(r8), intent(in) :: lc, detr
 !
 ! Local variables declaration
 !
-  real(r8) :: maxVel, minDetrDz, minDetrDz2
-  real(r8) :: rho0, rhoP, rhoUp, rhoDown, N2, N2A, N2P
+  real(r8) :: detrDz, minDz, maxVel, Fr
+  real(r8) :: rhoP, rho1, rho2, h1, h2, gRed, potE
+  integer  :: udSwitch
+  logical :: isSurface = .FALSE.
 !
 ! For detrainment weight function
 !
-  real(r8) :: detrVel
-  real(r8) :: detrWeight, detrWeightSum
-  integer  :: KI, detrN, searchSwitch
-  integer :: K, counter
-END SUBROUTINE ICEPLUME_DETRAIN_FULL
+  real(r8) :: detrVel, detrWeight, detrSum
 !
-! ==================================================================!
-!                                                                   !
-! Use this function to calculate the thickness of detrainment.      !
-!                                                                   !
-! ==================================================================!
+! Other local variables
 !
-SUBROUTINE ICEPLUME_DETRAIN_HALF(ng, I,                                 &
-                              &  iceDepthK, plumeDepthK,                &
-                              &  dx, dy,                                &
-                              &  detr, detrDz)
-  USE mod_iceplume
-  implicit none
-!
-! In/out variables
-!
-  integer, intent(in) :: ng, I
-  integer, intent(in) :: iceDepthK, plumeDepthK
-  real(r8), intent(in) :: dx, dy
-  real(r8), intent(in) :: detr
-  real(r8), intent(inout) :: detrDz
-!
-! Local variables declaration
-!
-  real(r8) :: maxVel, minDetrDz, minDetrDz2
-  real(r8) :: rho0, rhoP, rhoUp, rhoDown, N2, N2A, N2P
-!
-! For detrainment weight function
-!
-  real(r8) :: detrVel
-  real(r8) :: detrWeight, detrWeightSum
-  integer  :: KI, detrN, searchSwitch
-  integer :: K, counter
+  integer  :: KI, K, counter
+  real(r8) :: rhoH
 !
 ! ==================================================================!
 !                                                                   !
@@ -72,171 +80,163 @@ SUBROUTINE ICEPLUME_DETRAIN_HALF(ng, I,                                 &
 !                                                                   !
 ! ==================================================================!
 !
-! Check the horizontal advection CFL criteria to
-! determine if to distribute the detrainment in several layers.
-! Calculate maxinum velocity based on the CFL criteria
+  detrDz = 0.0
 !
-  maxVel = CuMax*dx/dt(ng)
-  minDetrDz = detr/(maxVel*dy)
+! First, check if plume detrains in surface layer.
 !
-! Check the Richardson number criteria to determine
-! if to distribute the detrainment in several layers.
+  IF (plumeDepthK .EQ. N(ng)) isSurface = .TRUE.
 !
-! Calculate Brunt-Vaisala frequency
+  IF (isSurface) THEN
 !
-  K = plumeDepthK
-  IF (K .EQ. N(ng)) THEN
-    rhoUp = PLUME(ng) % rhoAm(I, K)
-  ELSE
-    rhoUp =0.5*(PLUME(ng) % rhoAm(I, K+1) +                             &
-      &         PLUME(ng) % rhoAm(I, K))
+! Use Froude number to limit detrainment flow speed.
+!
+    rhoP = PLUME(ng) % rho(I, plumeDepthK)
+    rhoH = 0.0
+    h1 = 0.0
+    DO K = N(ng), 1, -1
+      PLUME(ng) % detI(I, K) = 1
+      detrDz = detrDz + PLUME(ng) % dz(I, K)
+      h1 = h1+PLUME(ng) % dz(I, K)
+      rhoH = rhoH+PLUME(ng) % dz(I, K)*PLUME(ng) % rhoAm(I, K)
+      rho1 = rhoH/h1
+      gRed = MAX(g*(rho1-rhoP)/rhoRef, 0.0)
+      Fr = detr/(lc*h1)/SQRT(gRed*h1)
+      IF (Fr .LE. 1.0/RiB) EXIT
+    ENDDO
+  ELSE  ! (.NOT. isSurface)
+!
+! Use the Richardson number criteria to determine if to distribute
+! the detrainment in several layers. First, calculate BV frequency.
+!
+    PLUME(ng) % detI(I, plumeDepthK) = 1
+    detrDz = detrDz + PLUME(ng) % dz(I, plumeDepthK)
+!
+! Get density of the upper and lower layer.
+!
+    rhoH = 0.0
+    h1 = 0.0
+    DO K = plumeDepthK, N(ng)
+      IF (K .EQ. plumeDepthK) THEN
+        h1 = h1+0.5*PLUME(ng) % dz(I, K)
+        rhoH = rhoH+0.5*PLUME(ng) % dz(I, K)*PLUME(ng) % rhoAm(I, K)
+      ELSE
+        h1 = h1+PLUME(ng) % dz(I, K)
+        rhoH = rhoH+PLUME(ng) % dz(I, K)*PLUME(ng) % rhoAm(I, K)
+      ENDIF
+    ENDDO
+    rho1 = rhoH/h1
+    rhoH = 0.0
+    h2 = 0.0
+    DO K = 1, plumeDepthK
+      IF (K .EQ. plumeDepthK) THEN
+        h2 = h2+0.5*PLUME(ng) % dz(I, K)
+        rhoH = rhoH+0.5*PLUME(ng) % dz(I, K)*PLUME(ng) % rhoAm(I, K)
+      ELSE
+        h2 = h2+PLUME(ng) % dz(I, K)
+        rhoH = rhoH+PLUME(ng) % dz(I, K)*PLUME(ng) % rhoAm(I, K)
+      ENDIF
+    ENDDO
+    rho2 = rhoH/h2
+!
+! Compute minimum detrainment thickness.
+!
+    gRed = MAX(-g*(rho1-rho2)/rhoRef, gRedBkg)
+    maxVel = SQRT(gRed*h1*h2/(h1+h2))/RiB
+    minDz = detr/maxVel/lc
+!
+! Add layers around plumeDepthK until it reaches critical thickness.
+!
+    counter = 0
+    KI = plumeDepthK
+    potE = g*PLUME(ng) % dz(I, KI)*(PLUME(ng) % rhoAm(I, KI)-rhoP)
+    IF (potE .GT. 0.0) THEN
+      udSwitch = 1
+    ELSE
+      udSwitch = -1
+    ENDIF
+    DO WHILE ( (detrDz .LT. minDz) .AND. (counter .LT. 100) )
+      counter = counter + 1
+!
+! If the plume has reached surface/bottom, set searchswitch to -1/1.
+!
+      IF     ( (PLUME(ng) % detI(I, N(ng)) .EQ. 1) .AND.                &
+        &      (PLUME(ng) % detI(I, 0) .EQ. 1) ) THEN
+        udSwitch = 0
+        EXIT
+      ELSEIF ( (PLUME(ng) % detI(I, N(ng)) .EQ. 1) .AND.                &
+        &      (PLUME(ng) % detI(I, 0) .EQ. 0) ) THEN
+        udSwitch = -1
+      ELSEIF ( (PLUME(ng) % detI(I, N(ng)) .EQ. 0) .AND.                &
+        &      (PLUME(ng) % detI(I, 0) .EQ. 1) ) THEN
+        udSwitch = 1
+      ENDIF
+!
+      IF (udSwitch .EQ. 1) THEN
+!
+! Search one layer up
+!
+        DO K = 1, N(ng)
+          IF ((PLUME(ng) % detI(I, K) .EQ. 0) .AND.                     &
+            & (PLUME(ng) % detI(I, K-1) .EQ. 1)) THEN
+            KI = K
+          ENDIF
+        ENDDO
+      ELSEIF (udSwitch .EQ. -1) THEN
+!
+! Search one layer down
+!
+        DO K = 1, N(ng)-1
+          IF ((PLUME(ng) % detI(I, K+1) .EQ. 1) .AND.                   &
+            & (PLUME(ng) % detI(I, K) .EQ. 0)) THEN
+            KI = K
+          ENDIF
+        ENDDO
+      ENDIF
+!
+! Search layer to minimize potential energy anomaly.
+!
+      potE = potE +                                                     &
+        & g*PLUME(ng) % dz(I, KI)*(PLUME(ng) % rhoAm(I, KI)-rhoP)
+      IF (potE .GT. 0.0) THEN
+        udSwitch = 1
+      ELSE
+        udSwitch = -1
+      ENDIF
+!
+! Update detrainment layer flag and detrainment depth.
+!
+      PLUME(ng) % detI(I, KI) = 1
+      detrDz = detrDz + PLUME(ng) % dz(I, KI)
+!
+! This is another exit loop criteria.
+!
+      IF ( detrDz .EQ. (detrDz+1.0) ) EXIT
+    ENDDO
   ENDIF
-!
-  IF (K .EQ. 1) THEN
-    rhoDown = PLUME(ng) % rhoAm(I, K)
-  ELSE
-    rhoDown = 0.5*(PLUME(ng) % rhoAm(I, K-1) +                          &
-      &            PLUME(ng) % rhoAm(I, K))
-  ENDIF
-  rho0 = PLUME(ng) % rhoAm(I, K)
-  rhoP = 0.5*(PLUME(ng) % rho(I, K) + PLUME(ng) % rho(I, K-1))
-  N2A = -g*(rhoUp-rhoDown)/(PLUME(ng) % dz(I, K)*rho0)
-  N2P = -g*(rhoP -rho0   )/(PLUME(ng) % dz(I, K)*rho0)
-  N2  = MAX(N2A, N2P, N2Bkg)
-  minDetrDz2 = (detr**2*RiBmin/N2/dy**2)**0.25
-!
-  minDetrDz = MAX(minDetrDz, minDetrDz2)
 !
 ! ==================================================================!
 !                                                                   !
 ! PART II - Distribute detrainmnet in several layers                !
 !                                                                   !
 ! Update log                                                        !
-! Use a Gause function to smooth the distribution                   !
+! Use a Gause function to smooth the distribution.                  !
 ! 2018/06/08 Chuning Wang                                           !
 !                                                                   !
 ! ==================================================================!
 !
-! Initiate searchSwitch for depthFinder == 2
-!
-  IF (depthFinder .EQ. 2) searchSwitch = 1
-  counter = 0
-  DO WHILE (detrDz .LT. minDetrDz)
-    counter = counter + 1
-!
-! If detrDz is NaN, exit loop
-!
-    IF ((detrDz .EQ. (detrDz+1)) .OR. (counter .GT. 100)) EXIT
-!
-    IF (depthFinder .EQ. 1) THEN
-!
-! Search method 1, search one layer up until meet the surface
-! Search for the nearest layer
-!
-      IF (PLUME(ng) % det(I, N(ng)) .EQ. 0.d0) THEN
-!
-! If the plume has not yet reached the surface, search for one layer
-! up
-!
-        DO K = 2,N(ng)
-          IF ((PLUME(ng) % detI(I, K) .EQ. 0) .and.                     &
-            & (PLUME(ng) % detI(I, K-1) .EQ. 1)) THEN
-            KI = K
-          ENDIF
-        ENDDO
-      ELSE
-!
-! If the plume has reached surface, search for one layer down
-!
-        DO K = 1,N(ng)-1
-          IF ((PLUME(ng) % detI(I, K+1) .EQ. 1) .and.                   &
-            & (PLUME(ng) % detI(I, K) .EQ. 0)) THEN
-            KI = K
-          ENDIF
-        ENDDO
-      ENDIF
-!
-    ELSEIF (depthFinder .EQ. 2) THEN
-!
-! Search method 2, search one layer up then one layer down
-! If the plume has reached surface, hard code searchSwitch to -1
-!
-      IF (PLUME(ng) % det(I, N(ng)) .GT. 0.d0) THEN
-        searchSwitch = -1
-      ENDIF
-!
-      IF (searchSwitch .EQ. 1) THEN
-!
-! Search one layer up
-!
-        DO K = 2,N(ng)
-          IF ((PLUME(ng) % detI(I, K) .EQ. 0) .and.                     &
-            & (PLUME(ng) % detI(I, K-1) .EQ. 1)) THEN
-            KI = K
-          ENDIF
-        ENDDO
-      ELSEIF (searchSwitch .EQ. -1) THEN
-!
-! Search one layer down
-!
-        DO K = 1,N(ng)-1
-          IF ((PLUME(ng) % detI(I, K+1) .EQ. 1) .and.                   &
-            & (PLUME(ng) % detI(I, K) .EQ. 0)) THEN
-            KI = K
-          ENDIF
-        ENDDO
-      ENDIF
-      searchSwitch = searchSwitch*(-1)
-!
-    ELSE
-!
-! Other unknown search method will triger this error
-!
-      KI = -1
-!
-    ENDIF
-!
-! Update detrainment layer flag and detrainment depth
-!
-    PLUME(ng) % detI(I, KI) = 1
-    detrDz = detrDz + PLUME(ng) % dz(I, KI)
-!
-! If KI is at the bottom of the plume, the search reaches the bottom and
-! the barotropic velocity is possibly too large. Print the message to log
-! file to alert the Users.
-!
-    IF (KI .EQ. iceDepthK) THEN
-      write(*, *)  'ICEPLUME ALERT - KI = IceDepthK'
-      write(*, *)  'checkCFL searched to the bottom of plume!'
-      EXIT
-    ENDIF
-  ENDDO  ! WHILE detrDz .LT. minDetrDz
-!
 ! Update detrainment volume flux
 !
-  detrN = SUM(PLUME(ng) % detI(I, :))
-  IF (detrN .GT. 1) THEN
-    detrVel = detr / (dy * detrDz)
-    DO K = 1,N(ng)
-      IF (PLUME(ng) % detI(I, K) .EQ. 1) THEN
-!
-! First, calculate weight using Gaussian function.
-!
-        detrWeight = EXP(-1.0 * (2 *                                    &
-          & (PLUME(ng) % zR(I, K)-                                      &
-          &  PLUME(ng) % zR(I, plumeDepthK)) /                          &
-          & detrDz)**2)
-        PLUME(ng) % det(I, K) = detrWeight * detrVel * dy *             &
-          & PLUME(ng) % dz(I, K)
-      ENDIF
-    ENDDO
+  detrVel = detr / (lc * detrDz)
+  DO K = 1,N(ng)
+    IF (PLUME(ng) % detI(I, K) .EQ. 1) THEN
+      PLUME(ng) % det(I, K) = detrVel * lc * PLUME(ng) % dz(I, K)
+    ENDIF
+  ENDDO
 !
 ! Normalize
 !
-    detrWeightSum = SUM(PLUME(ng) % det(I, :))
-    DO K = 1,N(ng)
-      PLUME(ng) % det(I, K) = PLUME(ng) % det(I, K) *                   &
-        & detr / detrWeightSum
-    ENDDO
-  ENDIF  ! detrN .GT. 1
-END SUBROUTINE ICEPLUME_DETRAIN_HALF
+  detrSum = SUM(PLUME(ng) % det(I, :))
+  DO K = 1,N(ng)
+    PLUME(ng) % det(I, K) = PLUME(ng) % det(I, K)*detr/detrSum
+  ENDDO
+END SUBROUTINE ICEPLUME_DETRAIN

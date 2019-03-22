@@ -5,58 +5,81 @@
 !                                                                   !
 ! ==================================================================!
 !
-! ==================================================================!
-! Program to calculate the plume shape, S, T, V etc.                !
-! ==================================================================!
-!
 SUBROUTINE ICEPLUME_ENTRAIN(ng, I, iceDepthK,                           &
                           & fIni, tIni, sIni,                           &
                           & sgTyp, sgLen)
 !
   USE mod_iceplume
   implicit none
+!
+! ==================================================================!
+!                                                                   !
+! Input variables:                                                  !
+!                                                                   !
+! ==================================================================!
+!                                                                   !
+! ng          - grid identifier                                     !
+! I           - point source index identifier                       !
+! iceDepthK   - vertical grid index of grounding line depth         !
+! fIni        - subglacial runoff volume flux [m^3 s^-1]            !
+! tIni        - subglacial runoff temperature [degC]                !
+! sIni        - subglacial runoff salinity [PSU]                    !
+! sgTyp       - subglacial runoff type identifier                   !
+! sgLen       - subglacial runoff discharge length [m]              !
+!                                                                   !
+! ==================================================================!
+!                                                                   !
+! Local variables:                                                  !
+!                                                                   !
+! ==================================================================!
+!                                                                   !
+! RHO         - function to compute density                         !
+! rhoA/tA/sA  - ambient density/temperature/salinity                !
+! zIn/zOut    - in/out depth of the model steps                     !
+!                                                                   !
+! ==================================================================!
+!
+! In/out variables
+!
   integer, intent(in) :: ng, I, iceDepthK
   real(r8), intent(in) :: fIni, tIni, sIni
   integer, intent(in) :: sgTyp
   real(r8), intent(in) :: sgLen
 !
-! ==================================================================!
-! Local variables for ODEPACK                                       !
-! ==================================================================!
-!
-  integer :: IOPT, ISTATE, ITASK, ITOL, IWORK(20), LIW, LRW, MF, NEQ
-  real(r8), parameter :: RTOL = 1.0d-5
-  real(r8), parameter :: ATOL = 1.0d-5
-  real(r8) :: RWORK(116), Y(10)
-!
-! Y is input/output vector for DLSODE
-!   Y(1)  - plume volume flux
-!   Y(2)  - plume velocity
-!   Y(3)  - plume temperature
-!   Y(4)  - plume salinity
-!   Y(5)  - integrated plume/glacier contact area
-!   Y(6)  - area integrated melt
-!   Y(7)  - fake variable to pass in ng
-!   Y(8)  - fake variable to pass in I
-!   Y(9)  - fake variable to pass in sgTyp
-!   Y(10) - fake variable to pass in sgLen
-!
-! ==================================================================!
-! Other local variables                                             !
-! ==================================================================!
+! Local variables declaration
 !
   real(r8) :: RHO
   real(r8) :: rhoA, tA, sA
   real(r8) :: zIn, zOut
   integer :: K
 !
-! Plume models
+! Local variables for ODEPACK
 !
+  integer :: IOPT, ISTATE, ITASK, ITOL, IWORK(20), LIW, LRW, MF, NEQ
+  real(r8), parameter :: RTOL = 1.0E-5_r8
+  real(r8), parameter :: ATOL = 1.0E-5_r8
+  real(r8) :: RWORK(116), Y(10)
   external GENERAL_ENTRAIN_MODEL, JEX
 !
 ! ==================================================================!
+!                                                                   !
+! Y is input/output vector for DLSODE                               !
+!   Y(1)  - plume volume flux                                       !
+!   Y(2)  - plume velocity                                          !
+!   Y(3)  - plume temperature                                       !
+!   Y(4)  - plume salinity                                          !
+!   Y(5)  - integrated plume/glacier contact area                   !
+!   Y(6)  - area integrated melt                                    !
+!   Y(7)  - fake variable to pass in ng                             !
+!   Y(8)  - fake variable to pass in I                              !
+!   Y(9)  - fake variable to pass in sgTyp                          !
+!   Y(10) - fake variable to pass in sgLen                          !
+!                                                                   !
+! ==================================================================!
+!                                                                   !
 ! For ODEPACK solver. See ODEPACK documentation and source code in  !
 ! Cowton et al. 2015.                                               !
+!                                                                   !
 ! ==================================================================!
 !
   NEQ      = 6
@@ -70,9 +93,7 @@ SUBROUTINE ICEPLUME_ENTRAIN(ng, I, iceDepthK,                           &
   MF       = 10
   IWORK(7) = 2  ! To limit # of repeat error messages are printed
 !
-! ==================================================================!
-! Initial conditions                                                !
-! ==================================================================!
+! Initial conditions
 !
   Y(1)  = fIni  ! initial plume volume flux
   Y(2)  = wIni  ! initial vertical velocity
@@ -103,9 +124,6 @@ SUBROUTINE ICEPLUME_ENTRAIN(ng, I, iceDepthK,                           &
 ! Start at bottom of ice face
 !
   zIn = PLUME(ng) % zW(I, iceDepthK)
-!
-! Next point at which to retrieve values
-!
   zOut = PLUME(ng) % zW(I, iceDepthK+1)
 !
 ! Set initial conditions
@@ -122,14 +140,14 @@ SUBROUTINE ICEPLUME_ENTRAIN(ng, I, iceDepthK,                           &
     &                 PLUME(ng) % lm(I, iceDepthK),                     &
     &                 PLUME(ng) % lc(I, iceDepthK))
 !
-! ==================================================================!
-! Move up through water column from lowest layer                    !
-! ==================================================================!
+! Move up through water column from lowest layer
 !
   DO K = iceDepthK+1, N(ng)
 !
 ! ==================================================================!
+!                                                                   !
 ! Use DLSODE to solve plume properties.                             !
+!                                                                   !
 ! ==================================================================!
 !
 ! Check to make sure plume hasn't reached neutral buoyancy in a lower
@@ -147,6 +165,7 @@ SUBROUTINE ICEPLUME_ENTRAIN(ng, I, iceDepthK,                           &
             &             PLUME(ng) % lc(I, K))
 !
 ! ==================================================================!
+!                                                                   !
 ! Test to see if neutral buoyancy has now been reached. If solver   !
 ! returns ISTATE = -1, then it has been unable to meet required     !
 ! tolerances at this level. This generally occurs because plume     !
@@ -156,6 +175,7 @@ SUBROUTINE ICEPLUME_ENTRAIN(ng, I, iceDepthK,                           &
 ! neutral buoyancy. We therefore perform a manual comparrison of    !
 ! ambient and plume density. If plume density >= ambient density we !
 ! assign ISTATE = -1, again ending the call to the plume model.     !
+!                                                                   !
 ! ==================================================================!
 !
 ! Calculate plume density (rho = RHO(temp, salt, depth))
@@ -176,8 +196,7 @@ SUBROUTINE ICEPLUME_ENTRAIN(ng, I, iceDepthK,                           &
       ENDIF
       rhoA = RHO(tA, sA, zIn)
 !
-      IF ( (PLUME(ng) % rho(I, K) .GT. rhoA) .OR.                       &
-         & (K .EQ. N(ng)) ) THEN
+      IF ( (Y(2) .LE. 0.0) .OR. (K .EQ. N(ng)) ) THEN
         ISTATE = -1
       ENDIF
 !
@@ -189,8 +208,8 @@ SUBROUTINE ICEPLUME_ENTRAIN(ng, I, iceDepthK,                           &
 ! of this cell, so plume area and velocity equal zero. Other values are
 ! kept for use in determining plume outflow properties.
 !
-        Y(1) = 0.d0
-        Y(2) = 0.d0
+        Y(1) = 0.0
+        Y(2) = 0.0
         PLUME(ng) % lm(I, K) = PLUME(ng) % lm(I, K-1)
         PLUME(ng) % lc(I, K) = PLUME(ng) % lc(I, K-1)
       ELSE
@@ -218,9 +237,7 @@ SUBROUTINE ICEPLUME_ENTRAIN(ng, I, iceDepthK,                           &
       Y(6) = 0.0
     ENDIF
 !
-! ==================================================================!
-! Save results.                                                     !
-! ==================================================================!
+! Save results.
 !
     PLUME(ng) % f(I, K) = Y(1)
     PLUME(ng) % w(I, K) = Y(2)
@@ -235,7 +252,7 @@ END SUBROUTINE ICEPLUME_ENTRAIN
 !
 ! ==================================================================!
 !                                                                   !
-! Plume models.                                                     !
+! Below is the generalized plume model.                             !
 !                                                                   !
 ! ==================================================================!
 !
@@ -255,13 +272,13 @@ SUBROUTINE GENERAL_ENTRAIN_MODEL (NEQ, T, Y, YDOT)
 !
 ! Check if velcoity is positive
 !
-  IF (Y(2) .LE. 0.0d0) THEN
-    YDOT(1) = 0.0d0
-    YDOT(2) = 0.0d0
-    YDOT(3) = 0.0d0
-    YDOT(4) = 0.0d0
-    YDOT(5) = 0.0d0
-    YDOT(6) = 0.0d0
+  IF (Y(2) .LE. 0.0_r8) THEN
+    YDOT(1) = 0.0_r8
+    YDOT(2) = 0.0_r8
+    YDOT(3) = 0.0_r8
+    YDOT(4) = 0.0_r8
+    YDOT(5) = 0.0_r8
+    YDOT(6) = 0.0_r8
   ELSE
 !
 ! Interpolate from imposed ambient profiles
@@ -303,7 +320,7 @@ SUBROUTINE GENERAL_ENTRAIN_MODEL (NEQ, T, Y, YDOT)
     c = GamS*Y(4)*(cI*(lambda2 + lambda3*T - tIce) + L) +               &
       & GamT*sIce*cW*(Y(3) - lambda2 - lambda3*T)
 !
-    sB   = (1./(2.*a))*(-b - SQRT(b**2. - 4.*a*c))
+    sB   = (1.0/(2.0*a))*(-b - SQRT(b**2 - 4.0*a*c))
     tB   = lambda1*sB + lambda2 + lambda3*T
     mdot = GamS*SQRT(Cd)*Y(2)*(Y(4) - sB)/sB
 !
@@ -336,6 +353,10 @@ SUBROUTINE GENERAL_ENTRAIN_MODEL (NEQ, T, Y, YDOT)
 !
 END SUBROUTINE GENERAL_ENTRAIN_MODEL
 !
+! ==================================================================!
+!                                                                   !
+! Use this function to calculate plume metrics.                     !
+!                                                                   !
 ! ==================================================================!
 !
 SUBROUTINE PLUME_METRICS (sgTyp, area, Ls, Lm, Lc)
@@ -396,6 +417,10 @@ SUBROUTINE PLUME_METRICS (sgTyp, area, Ls, Lm, Lc)
 END SUBROUTINE PLUME_METRICS
 !
 ! ==================================================================!
+!                                                                   !
+! Use this function to calculate seawater density.                  !
+!                                                                   !
+! ==================================================================!
 !
 DOUBLE PRECISION FUNCTION RHO(T,S,z)
 !
@@ -443,6 +468,10 @@ DOUBLE PRECISION FUNCTION RHO(T,S,z)
 END
 !
 ! ==================================================================!
+!                                                                   !
+! Use this function to do 1D interpolation.                         !
+!                                                                   !
+! ==================================================================!
 !
 SUBROUTINE LININT(nx,xtab,ytab,x,y)
 !
@@ -477,9 +506,11 @@ SUBROUTINE LININT(nx,xtab,ytab,x,y)
 END
 !
 ! ==================================================================!
-!
-! Dummy routine for ODEPACK. Necessary for Jacobian matrix if
-! stiff ODEs.
+!                                                                   !
+! Dummy routine for ODEPACK. Necessary for Jacobian matrix if       !
+! stiff ODEs.                                                       !
+!                                                                   !
+! ==================================================================!
 !
 SUBROUTINE jex()
   RETURN
