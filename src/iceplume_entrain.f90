@@ -375,6 +375,7 @@ SUBROUTINE PLUME_METRICS (sgTyp, area, Ls, Lm, Lc)
   integer, intent(in) :: sgTyp
   real(r8), intent(in) :: area, Ls
   real(r8), intent(out) :: Lm, Lc
+  real(r8) :: gam, a, b, h
 !
   SELECT CASE (sgTyp)
     CASE (2)
@@ -404,6 +405,17 @@ SUBROUTINE PLUME_METRICS (sgTyp, area, Ls, Lm, Lc)
 !
       Lc = 2.*SQRT(2.*pi*area)
       Lm = 0.
+!
+    CASE (6)
+!
+! Elipse (Aspect ratio 0.5)
+!
+      gam = 0.5_r8
+      b = SQRT(2.*area/(gam*pi))
+      a = gam*b
+      h = ((a-b)/(a+b))**2
+      Lc = 0.5*pi*(a+b)*(1.+3.*h/(10.+SQRT(4.-3.*h)))
+      Lm = 2.*b
 !
     CASE DEFAULT
 !
