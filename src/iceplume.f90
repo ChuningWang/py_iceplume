@@ -89,15 +89,22 @@ PROGRAM iceplume
 !
 ! Discharge tracer concentration
 !
-  IF (useTracers .and. useInputTracers) THEN
-    DO iTracer = 3, NTr
-      PLUME(ng) % trcIni(I, iTracer) = trcIni
-    ENDDO
-  ELSE
-    DO iTracer = 3, NTr
-      PLUME(ng) % trcIni(I, iTracer) = 0.0d0
-    ENDDO
-  ENDIF
+  DO iTracer = 3, NTr
+    PLUME(ng) % trcIni(I, iTracer) = trcIni
+  ENDDO
+!
+! Calculate rho-layer depth, thickness, and ambient density
+!
+        DO K = 1, Nr
+          PLUME(ng) % zR(I, K) =                                       &
+     &        0.5d0 * (PLUME(ng) % zW(I, K-1) + PLUME(ng) % zW(I, K))
+          PLUME(ng) % dz(I, K) =                                       &
+     &        PLUME(ng) % zW(I, K) - PLUME(ng) % zW(I, K-1)
+          PLUME(ng) % rhoAm(I, K) =                                    &
+     &        RHO(PLUME(ng) % tAm(I, K),                               &
+     &            PLUME(ng) % sAm(I, K),                               &
+     &            PLUME(ng) % zR(I, K))
+        ENDDO
 !
 ! ==================================================================
 ! Call main function
@@ -113,41 +120,34 @@ PROGRAM iceplume
 ! Write to file
 ! ==================================================================
 !
-  DO K = 1, Nr
-    PLUME(ng) % rhoAm(I, K) = RHO(PLUME(ng) % tAm(I, K), &
-                                & PLUME(ng) % sAm(I, K), &
-                                & PLUME(ng) % zR(I, K)) - 1000.0d0
-  ENDDO
-  DO K = 0, Nr
-    PLUME(ng) % rho(I, K) = RHO(PLUME(ng) % t(I, K), &
-                              & PLUME(ng) % s(I, K), &
-                              & PLUME(ng) % zW(I, K)) - 1000.0d0
-  ENDDO
   write(*, *)  'Writing output to files...'
 !
   open(unit=15, file='./outputs/iceplume_zw.txt')
   write(15, '(A4, 99 A20)')  'lev', 'zW',                 &
-    & 'f', 'w', 't', 's', 'a', 'mInt', 'rho'
+    & 'f', 'w', 'a', 't', 's', 'mInt', 'rho'
   DO K = 0, Nr
     write(15, '(I4, 99 E20.8)')  K, PLUME(ng) % zW(I, K), &
       & PLUME(ng) % f(I, K), PLUME(ng) % w(I, K),         &
-      & PLUME(ng) % t(I, K), PLUME(ng) % s(I, K),         &
-      & PLUME(ng) % a(I, K), PLUME(ng) % mInt(I, K),      &
+      & PLUME(ng) % a(I, K), PLUME(ng) % t(I, K),         &
+      & PLUME(ng) % s(I, K), PLUME(ng) % mInt(I, K),      &
       & PLUME(ng) % rho(I, K)
   ENDDO
   close(unit=15)
   open(unit=15, file='./outputs/iceplume_zr.txt')
-  write(15, '(A4, 99 A20)')  'lev', 'zR', 'dz',           &
-    & 'ent', 'det', 'tAm', 'sAm', 'vAm', 'wAm',           &
-    & 'rhoAm', 'm', 'mB'
+  write(15, '(A4, 99 A20)')  'lev', 'zR', &
+    & 'ent', 'det', 'detI', 'tAm', 'sAm', 'm', 'rhoAm'
   DO K = 1, Nr
-    write(15, '(I4, 99 E20.8)')                           &
-      & K, PLUME(ng) % zR(I, K), PLUME(ng) % dz(I, K),    &
+    write(15, '(I4, 99 E20.8)')  K, PLUME(ng) % zR(I, K), &
       & PLUME(ng) % ent(I, K), PLUME(ng) % det(I, K),     &
+      & REAL(PLUME(ng) % detI(I, K)),                     &
       & PLUME(ng) % tAm(I, K), PLUME(ng) % sAm(I, K),     &
-      & PLUME(ng) % vAm(I, K), PLUME(ng) % wAm(I, K),     &
-      & PLUME(ng) % rhoAm(I, K), PLUME(ng) % m(I, K),     &
-      & PLUME(ng) % mB(I, K)
+      & PLUME(ng) % m(I, K), PLUME(ng) % rhoAm(I, K),     &
+      & PLUME(ng) % detF(I, K), PLUME(ng) % detE(I, K),   &
+      & PLUME(ng) % detTrc(I, K, itemp),                  &
+      & PLUME(ng) % detTrc(I, K, isalt),                  &
+      & RHO(PLUME(ng) % detTrc(I, K, itemp),              &
+      &     PLUME(ng) % detTrc(I, K, isalt),              &
+      &     PLUME(ng) % zR(I, K))
   ENDDO
   close(unit=15)
   open(unit=15, file='./outputs/iceplume_dye.txt')

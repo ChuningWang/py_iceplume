@@ -59,10 +59,10 @@ MODULE mod_iceplume
   real(r8), parameter :: GamS       = 0.000620_r8
   real(r8), parameter :: Cd         = 0.065_r8
 !
-  real(r8), parameter :: RiB        = 1.5_r8
-  real(r8), parameter :: gRedBkg    = 0.03_r8
+  real(r8), parameter :: RiB        = 1.0_r8
+  real(r8), parameter :: gRedBkg    = 0.01_r8
   real(r8), parameter :: CdBkg      = 0.0025_r8
-  real(r8), parameter :: velBkg     = 0.01_r8
+  real(r8), parameter :: velBkg     = 0.03_r8
   real(r8), parameter :: wIni       = 1.0_r8
 !
 ! ====================================================================!
@@ -97,6 +97,11 @@ MODULE mod_iceplume
 ! ent           - entrainment rate [m^3 s^-1]                         !
 ! det           - detrainment rate [m^3 s^-1]                         !
 ! detI          - detrainment flag                                    !
+! detFrac       - fraction of detrainment in vertical direction       !
+!                                                                     !
+! detF          - detrainment rate of freshwater [m^3 s^-1]           !
+! detE          - detrainment rate of entrainment [m^3 s^-1]          !
+! detTrc        - detrainment tracer concentration                    !
 !                                                                     !
 ! m             - plume melt rate [m^3 s^-1]                          !
 ! mB            - background melt rate [m^3 s^-1]                     !
@@ -105,11 +110,11 @@ MODULE mod_iceplume
 !                                                                     !
 ! Passive tracers                                                     !
 !                                                                     !
-! trc           - passive tracer concentration                        !
-! trcAm         - ambient passive tracer concentration                !
-! trcB          - meltwater passive tracer concentration              !
-! trcCum        - accumulative passive tracer concentration           !
-! trcIni        - initial passive tracer concentration in discharge   !
+! trc           - tracer concentration                                !
+! trcAm         - ambient tracer concentration                        !
+! trcB          - background meltwater tracer concentration           !
+! trcCum        - accumulative tracer concentration                   !
+! trcIni        - initial tracer concentration in discharge           !
 !                                                                     !
 ! trcAmToB      - tracer flux rate associated with background         !
 !               - melt [unit s^-1]                                    !
@@ -153,6 +158,13 @@ MODULE mod_iceplume
     real(r8), pointer :: ent(:, :)
     real(r8), pointer :: det(:, :)
     integer(r8), pointer :: detI(:, :)
+    real(r8), pointer :: detFrac(:, :)
+!
+! For the neutral buoyancy detrainment model.
+!
+    real(r8), pointer :: detF(:, :)
+    real(r8), pointer :: detE(:, :)
+    real(r8), pointer :: detTrc(:, :, :)
 !
 ! Melt rate, freshwater and heat fluxes.
 !
@@ -188,42 +200,47 @@ MODULE mod_iceplume
 !
 ! Allocate profiles
 !
-        allocate( PLUME(ng) % dir(1:Nsrc(ng)) )
+      allocate( PLUME(ng) % dir(1:Nsrc(ng)) )
 !
-        allocate( PLUME(ng) % zW   (Nsrc(ng), 0:N(ng)) )
-        allocate( PLUME(ng) % f    (Nsrc(ng), 0:N(ng)) )
-        allocate( PLUME(ng) % w    (Nsrc(ng), 0:N(ng)) )
-        allocate( PLUME(ng) % t    (Nsrc(ng), 0:N(ng)) )
-        allocate( PLUME(ng) % s    (Nsrc(ng), 0:N(ng)) )
-        allocate( PLUME(ng) % a    (Nsrc(ng), 0:N(ng)) )
-        allocate( PLUME(ng) % mInt (Nsrc(ng), 0:N(ng)) )
-        allocate( PLUME(ng) % rho  (Nsrc(ng), 0:N(ng)) )
+      allocate( PLUME(ng) % zW   (Nsrc(ng), 0:N(ng)) )
+      allocate( PLUME(ng) % f    (Nsrc(ng), 0:N(ng)) )
+      allocate( PLUME(ng) % w    (Nsrc(ng), 0:N(ng)) )
+      allocate( PLUME(ng) % t    (Nsrc(ng), 0:N(ng)) )
+      allocate( PLUME(ng) % s    (Nsrc(ng), 0:N(ng)) )
+      allocate( PLUME(ng) % a    (Nsrc(ng), 0:N(ng)) )
+      allocate( PLUME(ng) % mInt (Nsrc(ng), 0:N(ng)) )
+      allocate( PLUME(ng) % rho  (Nsrc(ng), 0:N(ng)) )
 !
-        allocate( PLUME(ng) % zR    (Nsrc(ng), N(ng)  ) )
-        allocate( PLUME(ng) % tAm   (Nsrc(ng), N(ng)  ) )
-        allocate( PLUME(ng) % sAm   (Nsrc(ng), N(ng)  ) )
-        allocate( PLUME(ng) % vAm   (Nsrc(ng), N(ng)  ) )
-        allocate( PLUME(ng) % wAm   (Nsrc(ng), N(ng)  ) )
-        allocate( PLUME(ng) % tpAm  (Nsrc(ng), N(ng)  ) )
-        allocate( PLUME(ng) % rhoAm (Nsrc(ng), N(ng)+1) )
+      allocate( PLUME(ng) % zR    (Nsrc(ng), N(ng)  ) )
+      allocate( PLUME(ng) % tAm   (Nsrc(ng), N(ng)  ) )
+      allocate( PLUME(ng) % sAm   (Nsrc(ng), N(ng)  ) )
+      allocate( PLUME(ng) % vAm   (Nsrc(ng), N(ng)  ) )
+      allocate( PLUME(ng) % wAm   (Nsrc(ng), N(ng)  ) )
+      allocate( PLUME(ng) % tpAm  (Nsrc(ng), N(ng)  ) )
+      allocate( PLUME(ng) % rhoAm (Nsrc(ng), N(ng)+1) )
 !
-        allocate( PLUME(ng) % lm (Nsrc(ng), 0:N(ng)) )
-        allocate( PLUME(ng) % lc (Nsrc(ng), 0:N(ng)) )
+      allocate( PLUME(ng) % lm (Nsrc(ng), 0:N(ng)) )
+      allocate( PLUME(ng) % lc (Nsrc(ng), 0:N(ng)) )
 !
-        allocate( PLUME(ng) % ent  (Nsrc(ng), N(ng)) )
-        allocate( PLUME(ng) % det  (Nsrc(ng), N(ng)) )
-        allocate( PLUME(ng) % detI (Nsrc(ng), N(ng)) )
+      allocate( PLUME(ng) % ent  (Nsrc(ng), N(ng)) )
+      allocate( PLUME(ng) % det  (Nsrc(ng), N(ng)) )
+      allocate( PLUME(ng) % detI (Nsrc(ng), N(ng)) )
+      allocate( PLUME(ng) % detFrac (Nsrc(ng), N(ng)) )
 !
-        allocate( PLUME(ng) % m        (Nsrc(ng), N(ng)) )
-        allocate( PLUME(ng) % mB       (Nsrc(ng), N(ng)) )
-        allocate( PLUME(ng) % trcAmToB (Nsrc(ng), N(ng), NT(ng)) )
+      allocate( PLUME(ng) % detF    (Nsrc(ng), N(ng)) )
+      allocate( PLUME(ng) % detE    (Nsrc(ng), N(ng)) )
+      allocate( PLUME(ng) % detTrc  (Nsrc(ng), N(ng), NT(ng)) )
 !
-        allocate( PLUME(ng) % dz (Nsrc(ng), N(ng)+1) )
+      allocate( PLUME(ng) % m        (Nsrc(ng), N(ng)) )
+      allocate( PLUME(ng) % mB       (Nsrc(ng), N(ng)) )
+      allocate( PLUME(ng) % trcAmToB (Nsrc(ng), N(ng), NT(ng)) )
 !
-        allocate( PLUME(ng) % trcAm  (Nsrc(ng), N(ng), NT(ng)) )
-        allocate( PLUME(ng) % trcB   (Nsrc(ng), N(ng), NT(ng)) )
-        allocate( PLUME(ng) % trc    (Nsrc(ng), NT(ng)) )
-        allocate( PLUME(ng) % trcCum (Nsrc(ng), NT(ng)) )
-        allocate( PLUME(ng) % trcIni (Nsrc(ng), NT(ng)) )
+      allocate( PLUME(ng) % dz (Nsrc(ng), N(ng)) )
+!
+      allocate( PLUME(ng) % trcAm  (Nsrc(ng), N(ng), NT(ng)) )
+      allocate( PLUME(ng) % trcB   (Nsrc(ng), N(ng), NT(ng)) )
+      allocate( PLUME(ng) % trc    (Nsrc(ng), NT(ng)) )
+      allocate( PLUME(ng) % trcCum (Nsrc(ng), NT(ng)) )
+      allocate( PLUME(ng) % trcIni (Nsrc(ng), NT(ng)) )
     END SUBROUTINE allocate_iceplume
 END
