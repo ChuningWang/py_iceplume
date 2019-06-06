@@ -66,10 +66,15 @@ PROGRAM iceplume
 !
   open(unit=5, file='./inputs/iceplume_zr.txt')
   DO K = 1, Nr
+          PLUME(ng) % zR(I, K) =                                       &
+     &        0.5d0 * (PLUME(ng) % zW(I, K-1) + PLUME(ng) % zW(I, K))
+          PLUME(ng) % dz(I, K) =                                       &
+     &        PLUME(ng) % zW(I, K) - PLUME(ng) % zW(I, K-1)
     read(5, *)  PLUME(ng) % tpAm(I, K), PLUME(ng) % sAm(I, K),  &
               & PLUME(ng) % vAm(I, K), PLUME(ng) % wAm(I, K),   &
-              & PLUME(ng) % trcAm(I, K, 3)
+              & PLUME(ng) % trcAm(I, K, 3), PLUME(ng) % rhoAm(I, K)
   ENDDO
+    PLUME(ng) % rhoAm(I, N(ng)+1) = rhoAir
   close(unit=5)
 !
 ! convert potential temp to in-situ temp
@@ -95,16 +100,12 @@ PROGRAM iceplume
 !
 ! Calculate rho-layer depth, thickness, and ambient density
 !
-        DO K = 1, Nr
-          PLUME(ng) % zR(I, K) =                                       &
-     &        0.5d0 * (PLUME(ng) % zW(I, K-1) + PLUME(ng) % zW(I, K))
-          PLUME(ng) % dz(I, K) =                                       &
-     &        PLUME(ng) % zW(I, K) - PLUME(ng) % zW(I, K-1)
-          PLUME(ng) % rhoAm(I, K) =                                    &
-     &        RHO(PLUME(ng) % tAm(I, K),                               &
-     &            PLUME(ng) % sAm(I, K),                               &
-     &            PLUME(ng) % zR(I, K))
-        ENDDO
+!         DO K = 1, Nr
+!           PLUME(ng) % rhoAm(I, K) =                                    &
+!      &        RHO(PLUME(ng) % tAm(I, K),                               &
+!      &            PLUME(ng) % sAm(I, K),                               &
+!      &            PLUME(ng) % zR(I, K))
+!         ENDDO
 !
 ! ==================================================================
 ! Call main function

@@ -140,8 +140,8 @@ SUBROUTINE ICEPLUME_CALC(ng, I, dx, dy,                                 &
       cff = RHO(PLUME(ng) % t(I, osDepthK),                             &
      &          PLUME(ng) % s(I, osDepthK),                             &
      &          PLUME(ng) % zR(I, K))
-      IF ((cff .LT. PLUME(ng) % rhoAm(I, K)      ) .AND.                &
-     &    (cff .GT. PLUME(ng) % rhoAm(I, K+1)    )) THEN
+      IF ((cff .LT. PLUME(ng) % rhoAm(I, K)  ) .AND.                    &
+     &    (cff .GT. PLUME(ng) % rhoAm(I, K+1))) THEN
         plumeDepthK = K
       ENDIF
     ENDDO

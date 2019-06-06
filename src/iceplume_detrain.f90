@@ -44,6 +44,15 @@ SUBROUTINE ICEPLUME_DETRAIN(ng, I,                                      &
 ! isBottom    - logical, if the plume discharge at bottom           !
 ! udSwitch    - switch to determine search one layer up(1)/down(-1) !
 !                                                                   !
+! maxVel      - maximum velocity based on Richardson number         !
+!               criterion [m s^-1]                                  !
+! Fr          - Froude number                                       !
+! rho1        - upper layer density [kg m^-3]                       !
+! rho2        - lower layer density [kg m^-3]                       !
+! h1          - upper layer thickness [m]                           !
+! h2          - lower layer thickness [m]                           !
+! gRed        - reduced gravity [m s^-2]                            !
+!                                                                   !
 ! volR        - detrainment volume of runoff [m^3]                  !
 ! volM        - detrainment volume of meltwater                     !
 ! volF        - detrainment volume of total freshwater              !
@@ -78,13 +87,23 @@ SUBROUTINE ICEPLUME_DETRAIN(ng, I,                                      &
   integer  :: udSwitch
   logical  :: isSurface = .FALSE.
   logical  :: isBottom = .FALSE.
+  real(r8) :: RHO
+!
+! For BV frequency formula
+!
+  real(r8) :: bvf0, bvf
 !
 ! For detrainment weight function
 !
   real(r8) :: detSum
+!
+! For calculation of internal wave speed
+!
+  real(r8) :: maxVel, Fr, Ri
+  real(r8) :: rho1, rho2, h1, h2, gRed
+  real(r8) :: rhoH, h01, h02
   real(r8) :: volR, volM, volF, volE, volP
   real(r8) :: tF, tE, tP, tGade, sF, sE, sP, rhoF, rhoE
-  real(r8) :: RHO
 !
 ! Other local variables
 !
@@ -114,10 +133,55 @@ SUBROUTINE ICEPLUME_DETRAIN(ng, I,                                      &
   detDz = 0.0
   rhoP = RHO(PLUME(ng) % t(I, osDepthK), PLUME(ng) % s(I, osDepthK),    &
      &          PLUME(ng) % zR(I, plumeDepthK))
+  IF (isSurface) THEN
+    rhoH = 0.0
+    h2 = 0.0
+    DO K = iceDepthK+1, N(ng)
+      h2 = h2+PLUME(ng) % dz(I, K)
+      rhoH = rhoH + PLUME(ng) % dz(I, K)*PLUME(ng) % rhoAm(I, K)
+    ENDDO
+    rho2 = rhoH/h2
+    gRed = MAX(-g*(rhoP-rho2)/rhoRef, 0.0)
+    minDz = SQRT(det/(lc*gRed))
+  ELSE
+    KI = iceDepthK
+    bvf0 = -g*(PLUME(ng) % rhoAm(I, KI+1) - PLUME(ng) % rhoAm(I, KI)) / &
+        & (rhoRef*(PLUME(ng) % zW(I, KI+1) - PLUME(ng) % zW(I, KI)))
+    DO K = iceDepthK+1, osDepthK-1
+      bvf = -g*(PLUME(ng) % rhoAm(I, K+1) - PLUME(ng) % rhoAm(I, K)) /  &
+        & (rhoRef*(PLUME(ng) % zW(I, K+1) - PLUME(ng) % zW(I, K)))
+      IF ( bvf .GT. bvf0 ) THEN
+        KI = K
+        bvf0 = bvf
+      ENDIF
+    ENDDO
+    rhoH = 0.0
+    h1 = 0.0
+    DO K = KI+1, N(ng)
+      h1 = h1+PLUME(ng) % dz(I, K)
+      rhoH = rhoH + PLUME(ng) % dz(I, K)*PLUME(ng) % rhoAm(I, K)
+    ENDDO
+    rho1 = rhoH/h1
 !
-! Compute minimum detrainment thickness.
+    rhoH = 0.0
+    h2 = 0.0
+    DO K = 1, KI 
+      h2 = h2+PLUME(ng) % dz(I, K)
+      rhoH = rhoH + PLUME(ng) % dz(I, K)*PLUME(ng) % rhoAm(I, K)
+    ENDDO
+    rho2 = rhoH/h2
 !
-  minDz = det/lc
+    gRed = -g*(rho1-rho2)/rhoRef
+    KI = MAXLOC(PLUME(ng) % w(I, :), 1)
+    cff1 = PLUME(ng) % f(I, KI)/PLUME(ng) % w(I, KI)/lc
+    Ri = gRed*cff1/(PLUME(ng) % w(I, KI)**2)
+    IF (Ri .LT. 6.0) THEN
+      cff = (0.7*Ri**0.17)*PLUME(ng) % w(I, KI)
+    ELSE
+      cff = 0.95*PLUME(ng) % w(I, KI)
+    ENDIF
+    minDz = det/lc/cff
+  ENDIF
 !
 ! Add layers around plumeDepthK until it reaches critical thickness.
 !
@@ -273,7 +337,6 @@ SUBROUTINE ICEPLUME_DETRAIN(ng, I,                                      &
 !
   rhoF = RHO(tF, sF, PLUME(ng) % zR(I, plumeDepthK))
   rhoE = (rhoP*volP-rhoF*volF)/volE
-  write(*, *) tF, tE, sF, sE, rhoF, rhoE
 !
 ! Calculate proportion from mixing line.
 !

@@ -8,6 +8,8 @@
 *.exe
 *.txt
 *.mat
+*.pickle
+*.mat
 
 build/
 dist/

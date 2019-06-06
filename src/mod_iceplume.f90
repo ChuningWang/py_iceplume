@@ -60,7 +60,7 @@ MODULE mod_iceplume
   real(r8), parameter :: Cd         = 0.065_r8
 !
   real(r8), parameter :: RiB        = 1.0_r8
-  real(r8), parameter :: gRedBkg    = 0.01_r8
+  real(r8), parameter :: gRedBkg    = 0.1_r8
   real(r8), parameter :: CdBkg      = 0.0025_r8
   real(r8), parameter :: velBkg     = 0.03_r8
   real(r8), parameter :: wIni       = 1.0_r8
@@ -118,6 +118,8 @@ MODULE mod_iceplume
 !                                                                     !
 ! trcAmToB      - tracer flux rate associated with background         !
 !               - melt [unit s^-1]                                    !
+!                                                                     !
+! wAvg          - average weight for the current time step (0 to 1)   !
 !                                                                     !
 ! ====================================================================!
 !
@@ -183,6 +185,10 @@ MODULE mod_iceplume
     real(r8), pointer :: trc(:, :)
     real(r8), pointer :: trcCum(:, :)
     real(r8), pointer :: trcIni(:, :)
+!
+! For temporally average background density profile.
+!
+    real(r8) :: wAvg
   END TYPE T_PLUME
 !
   TYPE (T_PLUME), allocatable :: PLUME(:)
@@ -242,5 +248,7 @@ MODULE mod_iceplume
       allocate( PLUME(ng) % trc    (Nsrc(ng), NT(ng)) )
       allocate( PLUME(ng) % trcCum (Nsrc(ng), NT(ng)) )
       allocate( PLUME(ng) % trcIni (Nsrc(ng), NT(ng)) )
+!
+      PLUME(ng) % wAvg = 1.0
     END SUBROUTINE allocate_iceplume
 END

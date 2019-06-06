@@ -19,6 +19,7 @@ import netCDF4 as nc
 
 import pyroms
 from cmocean import cm
+import gsw
 
 plt.rcParams['figure.figsize'] = [18, 16]
 plt.rcParams['font.size'] = 20
@@ -62,7 +63,7 @@ def get_zw(zeta, h, vgrid):
     return zw
 
 
-def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True):
+def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, use_average=False):
     """ make input files for py_iceplume from roms outputs. """
     
     fh = nc.Dataset(roms_his_file, 'r')
@@ -86,6 +87,9 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True):
     sgdye_raw = []
     for j in range(ntracer):
         sgdye_raw.append(fh_river.variables['subglacial_dye_%02d' % (j+1)][:])
+    if use_average:
+        xloc = fh_river.variables['subglacial_Erange'][:]
+        yloc = fh_river.variables['subglacial_Xrange'][:]
     fh_river.close()
     sgdye_raw = np.array(sgdye_raw)
 
@@ -119,7 +123,7 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True):
             sgsalt[:, i] = np.interp(time, river_time, sgsalt_raw[:, i])
             for j in range(ntracer):
                 sgdye[:, j, i] = np.interp(time, river_time, sgdye_raw[j, :, i])
-    
+
     for i in range(len(epos)):
         if rdir[i] == 0:
             if ((mask_rho[epos[i], xpos[i]] == 0) & (mask_rho[epos[i]-1, xpos[i]] == 1)):
@@ -159,6 +163,7 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True):
     zeta = np.ma.zeros((ntime, nriver))
     salt = np.ma.zeros((ntime, N, nriver))
     temp = np.ma.zeros((ntime, N, nriver))
+    rhoAm = np.ma.zeros((ntime, N, nriver))
     v = np.ma.zeros((ntime, N, nriver))
     w = np.ma.zeros((ntime, N, nriver))
     if ntracer>0:
@@ -168,6 +173,7 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True):
         zeta[:, i] = fh.variables['zeta'][:, epos_rho[i], xpos_rho[i]]
         salt[:, :, i] = fh.variables['salt'][:, :, epos_rho[i], xpos_rho[i]]
         temp[:, :, i] = fh.variables['temp'][:, :, epos_rho[i], xpos_rho[i]]
+
         for j in range(ntracer):
             dye[:, j, :, i] = fh.variables['dye_%02d' % (j+1)][:, :, epos_rho[i], xpos_rho[i]]
         w[:, :, i] = 0.5*(fh.variables['w'][:, 1:, epos_rho[i], xpos_rho[i]]+
@@ -178,10 +184,21 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True):
         elif rdir[i] == 1:
             v[:, :, i] = 0.5*(fh.variables['u'][:, :, epos_rho[i], xpos_rho[i]-1]+
                               fh.variables['u'][:, :, epos_rho[i], xpos_rho[i]])
-    fh.close()
 
     zr = get_zr(zeta, h, grd.vgrid)
     zw = get_zw(zeta, h, grd.vgrid)
+
+    for i in range(nriver):
+        if use_average:
+            stemp = fh.variables['salt'][:, :, int(xloc[0, i]):int(xloc[1, i])+1, int(yloc[0, i]):int(yloc[1, i])+1].mean(axis=(-2, -1))
+            ttemp = fh.variables['temp'][:, :, int(xloc[0, i]):int(xloc[1, i])+1, int(yloc[0, i]):int(yloc[1, i])+1].mean(axis=(-2, -1))
+        else:
+            stemp = salt[:, :, i]
+            ttemp = temp[:, :, i]
+        np.set_printoptions(formatter={'float': '{: 15.10f}'.format})
+        rhoAm[:, :, i] = gsw.rho(stemp, ttemp, np.abs(zr[:, :, i]))
+
+    fh.close()
     
     roms_input = {}
     roms_input['N'] = N
@@ -213,6 +230,8 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True):
     roms_input['dye'] = dye
     roms_input['w'] = w
     roms_input['v'] = v
+
+    roms_input['rhoAm'] = rhoAm
     
     return roms_input
 
@@ -221,10 +240,12 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True):
 
 
 # -------------- generate inputs --------------------------------
-hist_file = '/Users/cw686/roms_archive/fjord_test2/outputs_archive/fjord_his_0.1s.nc'
-grid_file = '/Users/cw686/roms_archive/fjord_test2/fjord_grid.nc'
-river_file = '/Users/cw686/roms_archive/fjord_test2/fjord_river.nc'
-roms_input = make_input(hist_file, river_file, grid_file)
+# hist_file = '/glade/work/chuning/roms_archive/fjord_ks_full/outputs_archive/short/average/fjord_his.nc'
+hist_file = './fjord_his.nc'
+grid_file = '/glade/work/chuning/roms_archive/fjord_ks_full/fjord_grid.nc'
+river_file = '/glade/work/chuning/roms_archive/fjord_ks_full/fjord_river.nc'
+use_average = True
+roms_input = make_input(hist_file, river_file, grid_file, use_average=use_average)
 
 
 # In[8]:
@@ -257,11 +278,20 @@ iceplume_out['w'] = np.zeros((ntime, N+1, nriver))
 iceplume_out['t'] = np.zeros((ntime, N+1, nriver))
 iceplume_out['s'] = np.zeros((ntime, N+1, nriver))
 iceplume_out['a'] = np.zeros((ntime, N+1, nriver))
+iceplume_out['mInt'] = np.zeros((ntime, N+1, nriver))
+iceplume_out['rho'] = np.zeros((ntime, N+1, nriver))
 
 iceplume_out['zr'] = np.zeros((ntime, N, nriver))
 iceplume_out['ent'] = np.zeros((ntime, N, nriver))
 iceplume_out['det'] = np.zeros((ntime, N, nriver))
+iceplume_out['detI'] = np.zeros((ntime, N, nriver))
+iceplume_out['tAm'] = np.zeros((ntime, N, nriver))
+iceplume_out['sAm'] = np.zeros((ntime, N, nriver))
 iceplume_out['m'] = np.zeros((ntime, N, nriver))
+iceplume_out['rhoAm'] = np.zeros((ntime, N, nriver))
+iceplume_out['tDet'] = np.zeros((ntime, N, nriver))
+iceplume_out['sDet'] = np.zeros((ntime, N, nriver))
+iceplume_out['rhoDet'] = np.zeros((ntime, N, nriver))
 
 iceplume_out['dye'] = np.zeros((ntime, ntracer, nriver))
 
@@ -274,7 +304,8 @@ for i, ti in enumerate(trange):
                            roms_input['salt'][ti, :, ri],
                            roms_input['v'][ti, :, ri],
                            roms_input['w'][ti, :, ri],
-                           roms_input['dye'][ti, :, :, ri]
+                           roms_input['dye'][ti, :, :, ri],
+                           roms_input['rhoAm'][ti, :, ri]
                           )).T, fmt='%20.10e')
         np.savetxt('../inputs/iceplume_scalar.txt',
                 np.array([roms_input['N'], roms_input['dx'][ri],
@@ -296,13 +327,24 @@ for i, ti in enumerate(trange):
         iceplume_out['zw'][i, :, j] = data_zw[:, 1]
         iceplume_out['f'][i, :, j] = data_zw[:, 2]
         iceplume_out['w'][i, :, j] = data_zw[:, 3]
-        iceplume_out['t'][i, :, j] = data_zw[:, 4]
-        iceplume_out['s'][i, :, j] = data_zw[:, 5]
-        iceplume_out['a'][i, :, j] = data_zw[:, 6]
+        iceplume_out['a'][i, :, j] = data_zw[:, 4]
+        iceplume_out['t'][i, :, j] = data_zw[:, 5]
+        iceplume_out['s'][i, :, j] = data_zw[:, 6]
+        iceplume_out['mInt'][i, :, j] = data_zw[:, 7]
+        iceplume_out['rho'][i, :, j] = data_zw[:, 8]
+
         iceplume_out['zr'][i, :, j] = data_zr[:, 1]
         iceplume_out['ent'][i, :, j] = data_zr[:, 2]
         iceplume_out['det'][i, :, j] = data_zr[:, 3]
-        iceplume_out['m'][i, :, j] = data_zr[:, 9]
+        iceplume_out['detI'][i, :, j] = data_zr[:, 4]
+        iceplume_out['tAm'][i, :, j] = data_zr[:, 5]
+        iceplume_out['sAm'][i, :, j] = data_zr[:, 6]
+        iceplume_out['m'][i, :, j] = data_zr[:, 7]
+        iceplume_out['rhoAm'][i, :, j] = data_zr[:, 8]
+        iceplume_out['tDet'][i, :, j] = data_zr[:, 11]
+        iceplume_out['sDet'][i, :, j] = data_zr[:, 12]
+        iceplume_out['rhoDet'][i, :, j] = data_zr[:, 13]
+
         iceplume_out['dye'][i, :, j] = data_dye[2:]
 
 
