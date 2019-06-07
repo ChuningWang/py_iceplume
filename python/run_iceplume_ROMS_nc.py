@@ -241,9 +241,11 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
 
 # -------------- generate inputs --------------------------------
 # hist_file = '/glade/work/chuning/roms_archive/fjord_ks_full/outputs_archive/short/average/fjord_his.nc'
-hist_file = './fjord_his.nc'
-grid_file = '/glade/work/chuning/roms_archive/fjord_ks_full/fjord_grid.nc'
-river_file = '/glade/work/chuning/roms_archive/fjord_ks_full/fjord_river.nc'
+# grid_file = '/glade/work/chuning/roms_archive/fjord_ks_full/fjord_grid.nc'
+# river_file = '/glade/work/chuning/roms_archive/fjord_ks_full/fjord_river.nc'
+hist_file = '/Users/cw686/roms_archive/fjord_test/outputs/fjord_his.nc'
+grid_file = '/Users/cw686/roms_archive/fjord_test/fjord_grid.nc'
+river_file = '/Users/cw686/roms_archive/fjord_test/fjord_river.nc'
 use_average = True
 roms_input = make_input(hist_file, river_file, grid_file, use_average=use_average)
 

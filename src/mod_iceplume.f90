@@ -1,9 +1,9 @@
 MODULE mod_iceplume
-! ==================================================================!
-!                                                                   !
-! These are the module functions of iceplume model.                 !
-!                                                                   !
-! ==================================================================!
+! =====================================================================!
+!                                                                      !
+! These are the module functions of iceplume model.                    !
+!                                                                      !
+! =====================================================================!
 !
 ! This module stores all global variables.
 !
@@ -11,34 +11,34 @@ MODULE mod_iceplume
   USE mod_py_iceplume
   implicit none
 !
-! ====================================================================!
-!                                                                     !
-! Model parameters                                                    !
-!                                                                     !
-! alpha     - entrainment rate                                        !
-! tIce      - ice temperature [degC]                                  !
-! sIce      - ice salinity [PSU]                                      !
-! rhoRef    - reference density [kg m^-3]                             !
-! rhoAir    - air density [kg m^-3]                                   !
-! g         - gravity acceleration [m s^-2]                           !
-! cW        - heat capacity of water [J kg^-1 degC^-1]                !
-! cI        - heat capacity of ice [J kg^-1 degC^-1]                  !
-! L         - latent heat of melting [J kg^-1]                        !
-! lambda1   - freezing point slope [degC PSU^-1]                      !
-! lambda2   - freezing point offset [degC]                            !
-! lambda3   - freezing point depth slope [degC m^-1]                  !
-!                                                                     !
-! GamT      - thermal turbulent transfer coefficient                  !
-! GamS      - salt turbulent transfer coefficient                     !
-! Cd        - ice-plume drag coefficient                              !
-!                                                                     !
-! RiB       - critical Richardson number                              !
-! gRedBkg   - background reduced gravity                              !
-! CdBkg     - background ice-plume drag coefficient                   !
-! velBkg    - background velocity [m s^-1]                            !
-! wIni      - initial (discharge) velocity [m s^-1]                   !
-!                                                                     !
-! ====================================================================!
+! =====================================================================!
+!                                                                      !
+! Model parameters                                                     !
+!                                                                      !
+! alpha     - entrainment rate                                         !
+! tIce      - ice temperature [degC]                                   !
+! sIce      - ice salinity [PSU]                                       !
+! rhoRef    - reference density [kg m^-3]                              !
+! rhoAir    - air density [kg m^-3]                                    !
+! g         - gravity acceleration [m s^-2]                            !
+! cW        - heat capacity of water [J kg^-1 degC^-1]                 !
+! cI        - heat capacity of ice [J kg^-1 degC^-1]                   !
+! L         - latent heat of melting [J kg^-1]                         !
+! lambda1   - freezing point slope [degC PSU^-1]                       !
+! lambda2   - freezing point offset [degC]                             !
+! lambda3   - freezing point depth slope [degC m^-1]                   !
+!                                                                      !
+! GamT      - thermal turbulent transfer coefficient                   !
+! GamS      - salt turbulent transfer coefficient                      !
+! Cd        - ice-plume drag coefficient                               !
+!                                                                      !
+! RiB       - critical Richardson number                               !
+! gRedBkg   - background reduced gravity                               !
+! CdBkg     - background ice-plume drag coefficient                    !
+! velBkg    - background velocity [m s^-1]                             !
+! wIni      - initial (discharge) velocity [m s^-1]                    !
+!                                                                      !
+! =====================================================================!
 !
   real(r8), parameter :: pi = 4.0d0*ATAN(1.0d0)    ! Pi
 !
@@ -65,63 +65,59 @@ MODULE mod_iceplume
   real(r8), parameter :: velBkg     = 0.03_r8
   real(r8), parameter :: wIni       = 1.0_r8
 !
-! ====================================================================!
-!                                                                     !
-! PLUME Type variables                                                !
-!                                                                     !
-! dir           - direction of plume. +1 for positve direction and    !
-!                 -1 for negative direction. 0 for other situation.   !
-!                                                                     !
-! Profiles                                                            !
-!                                                                     !
-! zW            - depth [m]                                           !
-! f             - plume vertical volume flux [m^3 s^-1]               !
-! w             - plume vertical velocity [m s^-1]                    !
-! t             - plume temperature [degC]                            !
-! s             - plume salinity [PSU]                                !
-! a             - plume area integrated [m^2]                         !
-! mInt          - plume area integrated melt [m^3 s^-1]               !
-! rho           - plume density [kg m^-3]                             !
-!                                                                     !
-! zR            - depth at Rho points [m]                             !
-! sAm           - ambient salinity [PSU]                              !
-! tAm           - ambient temperature [degC]                          !
-! vAm           - horizontal velocity parallel to glacier [m s^-1]    !
-! wAm           - vertical velocity parallel to glacier [m s^-1]      !
-! tpAm          - ambient potential temperature [degC]                !
-! rhoAm         - ambient density [kg m^-3]                           !
-!                                                                     !
-! lm            - plume/glacier contact length [m]                    !
-! lc            - plume/water contact length [m]                      !
-!                                                                     !
-! ent           - entrainment rate [m^3 s^-1]                         !
-! det           - detrainment rate [m^3 s^-1]                         !
-! detI          - detrainment flag                                    !
-! detFrac       - fraction of detrainment in vertical direction       !
-!                                                                     !
-! detF          - detrainment rate of freshwater [m^3 s^-1]           !
-! detE          - detrainment rate of entrainment [m^3 s^-1]          !
-! detTrc        - detrainment tracer concentration                    !
-!                                                                     !
-! m             - plume melt rate [m^3 s^-1]                          !
-! mB            - background melt rate [m^3 s^-1]                     !
-!                                                                     !
-! dz            - RHO layer thickness [m]                             !
-!                                                                     !
-! Passive tracers                                                     !
-!                                                                     !
-! trc           - tracer concentration                                !
-! trcAm         - ambient tracer concentration                        !
-! trcB          - background meltwater tracer concentration           !
-! trcCum        - accumulative tracer concentration                   !
-! trcIni        - initial tracer concentration in discharge           !
-!                                                                     !
-! trcAmToB      - tracer flux rate associated with background         !
-!               - melt [unit s^-1]                                    !
-!                                                                     !
-! wAvg          - average weight for the current time step (0 to 1)   !
-!                                                                     !
-! ====================================================================!
+! =====================================================================!
+!                                                                      !
+! PLUME Type variables                                                 !
+!                                                                      !
+! dir           - direction of plume. +1 for positve direction and     !
+!                 -1 for negative direction. 0 for other situation.    !
+!                                                                      !
+! Profiles                                                             !
+!                                                                      !
+! zW            - depth [m]                                            !
+! f             - plume vertical volume flux [m^3 s^-1]                !
+! w             - plume vertical velocity [m s^-1]                     !
+! t             - plume temperature [degC]                             !
+! s             - plume salinity [PSU]                                 !
+! a             - plume area integrated [m^2]                          !
+! mInt          - plume area integrated melt [m^3 s^-1]                !
+! rho           - plume density [kg m^-3]                              !
+!                                                                      !
+! zR            - depth at Rho points [m]                              !
+! sAm           - ambient salinity [PSU]                               !
+! tAm           - ambient temperature [degC]                           !
+! vAm           - horizontal velocity parallel to glacier [m s^-1]     !
+! wAm           - vertical velocity parallel to glacier [m s^-1]       !
+! tpAm          - ambient potential temperature [degC]                 !
+! rhoAm         - ambient density [kg m^-3]                            !
+!                                                                      !
+! lm            - plume/glacier contact length [m]                     !
+! lc            - plume/water contact length [m]                       !
+!                                                                      !
+! ent           - entrainment rate [m^3 s^-1]                          !
+! det           - detrainment rate [m^3 s^-1]                          !
+! detI          - detrainment flag                                     !
+! detFrac       - fraction of detrainment in vertical direction        !
+!                                                                      !
+! m             - plume melt rate [m^3 s^-1]                           !
+! mB            - background melt rate [m^3 s^-1]                      !
+!                                                                      !
+! dz            - RHO layer thickness [m]                              !
+!                                                                      !
+! Passive tracers                                                      !
+!                                                                      !
+! trc           - tracer concentration                                 !
+! trcAm         - ambient tracer concentration                         !
+! trcB          - background meltwater tracer concentration            !
+! trcCum        - accumulative tracer concentration                    !
+! trcIni        - initial tracer concentration in discharge            !
+!                                                                      !
+! trcAmToB      - tracer flux rate associated with background          !
+!               - melt [unit s^-1]                                     !
+!                                                                      !
+! wAvg          - average weight for the current time step (0 to 1)    !
+!                                                                      !
+! =====================================================================!
 !
   TYPE T_PLUME
 !
@@ -193,15 +189,15 @@ MODULE mod_iceplume
 !
   TYPE (T_PLUME), allocatable :: PLUME(:)
 !
-! ====================================================================!
-!                                                                     !
-! Allocate PLUME Type variables.                                      !
-!                                                                     !
-! ====================================================================!
+! =====================================================================!
+!                                                                      !
+! Allocate PLUME Type variables.                                       !
+!                                                                      !
+! =====================================================================!
 !
   CONTAINS
     SUBROUTINE allocate_iceplume(ng)
-      integer :: ng
+      integer :: ng, K, is, itrc
       IF (ng .EQ. 1) allocate( PLUME(Ngrids) )
 !
 ! Allocate profiles
@@ -250,5 +246,14 @@ MODULE mod_iceplume
       allocate( PLUME(ng) % trcIni (Nsrc(ng), NT(ng)) )
 !
       PLUME(ng) % wAvg = 1.0
+      DO is = 1, Nsrc(ng)
+        DO K = 1, N(ng)
+          PLUME(ng) % detF(is, K) = 0.0
+          PLUME(ng) % detE(is, K) = 0.0
+          DO itrc = 1, NT(ng)
+            PLUME(ng) % detTrc(is, K, itrc) = 0.0
+          ENDDO
+        ENDDO
+      ENDDO
     END SUBROUTINE allocate_iceplume
 END
