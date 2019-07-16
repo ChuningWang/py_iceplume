@@ -243,9 +243,9 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
 # hist_file = '/glade/work/chuning/roms_archive/fjord_ks_full/outputs_archive/short/average/fjord_his.nc'
 # grid_file = '/glade/work/chuning/roms_archive/fjord_ks_full/fjord_grid.nc'
 # river_file = '/glade/work/chuning/roms_archive/fjord_ks_full/fjord_river.nc'
-hist_file = '/Users/cw686/roms_archive/fjord_test/outputs/fjord_his.nc'
-grid_file = '/Users/cw686/roms_archive/fjord_test/fjord_grid.nc'
-river_file = '/Users/cw686/roms_archive/fjord_test/fjord_river.nc'
+hist_file = '/Users/cw686/roms_archive/fjord_ks/outputs_archive/ref/fjord_his.nc'
+grid_file = '/Users/cw686/roms_archive/fjord_ks/fjord_grid.nc'
+river_file = '/Users/cw686/roms_archive/fjord_ks/fjord_river.nc'
 use_average = True
 roms_input = make_input(hist_file, river_file, grid_file, use_average=use_average)
 
@@ -286,6 +286,8 @@ iceplume_out['rho'] = np.zeros((ntime, N+1, nriver))
 iceplume_out['zr'] = np.zeros((ntime, N, nriver))
 iceplume_out['ent'] = np.zeros((ntime, N, nriver))
 iceplume_out['det'] = np.zeros((ntime, N, nriver))
+iceplume_out['detF'] = np.zeros((ntime, N, nriver))
+iceplume_out['detE'] = np.zeros((ntime, N, nriver))
 iceplume_out['detI'] = np.zeros((ntime, N, nriver))
 iceplume_out['tAm'] = np.zeros((ntime, N, nriver))
 iceplume_out['sAm'] = np.zeros((ntime, N, nriver))
@@ -338,6 +340,8 @@ for i, ti in enumerate(trange):
         iceplume_out['zr'][i, :, j] = data_zr[:, 1]
         iceplume_out['ent'][i, :, j] = data_zr[:, 2]
         iceplume_out['det'][i, :, j] = data_zr[:, 3]
+        iceplume_out['detF'][i, :, j] = data_zr[:, 9]
+        iceplume_out['detE'][i, :, j] = data_zr[:, 10]
         iceplume_out['detI'][i, :, j] = data_zr[:, 4]
         iceplume_out['tAm'][i, :, j] = data_zr[:, 5]
         iceplume_out['sAm'][i, :, j] = data_zr[:, 6]

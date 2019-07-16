@@ -38,6 +38,8 @@ MODULE mod_iceplume
 ! velBkg    - background velocity [m s^-1]                             !
 ! wIni      - initial (discharge) velocity [m s^-1]                    !
 !                                                                      !
+! detSigma  - detrainment Gaussian profile standard deviation          !
+!                                                                      !
 ! =====================================================================!
 !
   real(r8), parameter :: pi = 4.0d0*ATAN(1.0d0)    ! Pi
@@ -60,10 +62,12 @@ MODULE mod_iceplume
   real(r8), parameter :: Cd         = 0.065_r8
 !
   real(r8), parameter :: RiB        = 1.0_r8
-  real(r8), parameter :: gRedBkg    = 0.1_r8
+  real(r8), parameter :: gRedBkg    = 0.03_r8
   real(r8), parameter :: CdBkg      = 0.0025_r8
   real(r8), parameter :: velBkg     = 0.03_r8
   real(r8), parameter :: wIni       = 1.0_r8
+!
+  real(r8), parameter :: detSigma   = 0.5_r8
 !
 ! =====================================================================!
 !                                                                      !
@@ -99,6 +103,10 @@ MODULE mod_iceplume
 ! detI          - detrainment flag                                     !
 ! detFrac       - fraction of detrainment in vertical direction        !
 !                                                                      !
+! detF          - detrainment rate of freshwater [m^3 s^-1]            !
+! detE          - detrainment rate of entrainment [m^3 s^-1]           !
+! detTrc        - detrainment tracer concentration                     !
+!                                                                      !
 ! m             - plume melt rate [m^3 s^-1]                           !
 ! mB            - background melt rate [m^3 s^-1]                      !
 !                                                                      !
@@ -114,8 +122,6 @@ MODULE mod_iceplume
 !                                                                      !
 ! trcAmToB      - tracer flux rate associated with background          !
 !               - melt [unit s^-1]                                     !
-!                                                                      !
-! wAvg          - average weight for the current time step (0 to 1)    !
 !                                                                      !
 ! =====================================================================!
 !
@@ -181,10 +187,6 @@ MODULE mod_iceplume
     real(r8), pointer :: trc(:, :)
     real(r8), pointer :: trcCum(:, :)
     real(r8), pointer :: trcIni(:, :)
-!
-! For temporally average background density profile.
-!
-    real(r8) :: wAvg
   END TYPE T_PLUME
 !
   TYPE (T_PLUME), allocatable :: PLUME(:)
@@ -197,7 +199,7 @@ MODULE mod_iceplume
 !
   CONTAINS
     SUBROUTINE allocate_iceplume(ng)
-      integer :: ng, K, is, itrc
+      integer :: ng
       IF (ng .EQ. 1) allocate( PLUME(Ngrids) )
 !
 ! Allocate profiles
@@ -244,16 +246,5 @@ MODULE mod_iceplume
       allocate( PLUME(ng) % trc    (Nsrc(ng), NT(ng)) )
       allocate( PLUME(ng) % trcCum (Nsrc(ng), NT(ng)) )
       allocate( PLUME(ng) % trcIni (Nsrc(ng), NT(ng)) )
-!
-      PLUME(ng) % wAvg = 1.0
-      DO is = 1, Nsrc(ng)
-        DO K = 1, N(ng)
-          PLUME(ng) % detF(is, K) = 0.0
-          PLUME(ng) % detE(is, K) = 0.0
-          DO itrc = 1, NT(ng)
-            PLUME(ng) % detTrc(is, K, itrc) = 0.0
-          ENDDO
-        ENDDO
-      ENDDO
     END SUBROUTINE allocate_iceplume
 END

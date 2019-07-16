@@ -15,3 +15,5 @@ build/
 dist/
 data/
 figs/
+inputs/
+outputs/
