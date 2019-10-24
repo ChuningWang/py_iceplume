@@ -1,13 +1,3 @@
-
-# coding: utf-8
-
-# ### Standalone verison of ICEPLUME using ROMS output files.
-
-# In[1]:
-
-
-# get_ipython().run_line_magic('matplotlib', 'inline')
-
 # -------------- import modules --------------------------------
 from datetime import datetime, timedelta
 import subprocess
@@ -20,13 +10,6 @@ import netCDF4 as nc
 import pyroms
 from cmocean import cm
 import gsw
-
-plt.rcParams['figure.figsize'] = [18, 16]
-plt.rcParams['font.size'] = 20
-
-
-# In[2]:
-
 
 # -------------- functionals --------------------------------
 def get_zr(zeta, h, vgrid):
@@ -65,7 +48,7 @@ def get_zw(zeta, h, vgrid):
 
 def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, use_average=False):
     """ make input files for py_iceplume from roms outputs. """
-    
+
     fh = nc.Dataset(roms_his_file, 'r')
     fh_river = nc.Dataset(roms_river_file, 'r')
     grd = pyroms.grid.get_ROMS_grid('grd_temp', hist_file=roms_his_file,
@@ -80,7 +63,7 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
     sgtyp = fh_river.variables['subglacial_type'][:]
     sglen = fh_river.variables['subglacial_length'][:]
 
-    river_time = fh_river.variables['river_time'][:]
+    river_time = fh_river.variables['river_time'][:]*86400
     sgtrs_raw = fh_river.variables['subglacial_transport'][:]
     sgtemp_raw = fh_river.variables['subglacial_temp'][:]
     sgsalt_raw = fh_river.variables['subglacial_salt'][:]
@@ -108,7 +91,7 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
     epos_rho = np.zeros(nriver).astype('int')
     xpos_rho = np.zeros(nriver).astype('int')
     rdir2 = np.zeros(nriver)
-    
+
     if tracer1d:
         for i in range(nriver):
             sgtrs[:, i] = np.interp(time, river_time, sgtrs_raw[:, i])
@@ -199,19 +182,19 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
         rhoAm[:, :, i] = gsw.rho(stemp, ttemp, np.abs(zr[:, :, i]))
 
     fh.close()
-    
+
     roms_input = {}
     roms_input['N'] = N
     roms_input['ntime'] = ntime
     roms_input['nriver'] = nriver
     roms_input['ntracer'] = ntracer
     roms_input['dt'] = dt
-    
+
     roms_input['dx'] = dx
     roms_input['dy'] = dy
     roms_input['zr'] = zr
     roms_input['zw'] = zw
-    
+
     roms_input['epos'] = epos
     roms_input['xpos'] = xpos
     roms_input['rdir'] = rdir
@@ -223,7 +206,7 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
     roms_input['sgtemp'] = sgtemp
     roms_input['sgsalt'] = sgsalt
     roms_input['sgdye'] = sgdye
-    
+
     roms_input['time'] = time
     roms_input['salt'] = salt
     roms_input['temp'] = temp
@@ -232,38 +215,24 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
     roms_input['v'] = v
 
     roms_input['rhoAm'] = rhoAm
-    
+
     return roms_input
 
 
-# In[7]:
-
-
 # -------------- generate inputs --------------------------------
-# hist_file = '/glade/work/chuning/roms_archive/fjord_ks_full/outputs_archive/short/average/fjord_his.nc'
-# grid_file = '/glade/work/chuning/roms_archive/fjord_ks_full/fjord_grid.nc'
-# river_file = '/glade/work/chuning/roms_archive/fjord_ks_full/fjord_river.nc'
-hist_file = '/Users/cw686/roms_archive/fjord_ks/outputs_archive/ref/fjord_his.nc'
+hist_file = '/Users/cw686/roms_archive/fjord_ks/outputs/fjord_his.nc'
 grid_file = '/Users/cw686/roms_archive/fjord_ks/fjord_grid.nc'
 river_file = '/Users/cw686/roms_archive/fjord_ks/fjord_river.nc'
+tracer1d = False
 use_average = True
-roms_input = make_input(hist_file, river_file, grid_file, use_average=use_average)
-
-
-# In[8]:
-
+roms_input = make_input(hist_file, river_file, grid_file, tracer1d=tracer1d, use_average=use_average)
 
 # ------------ build the executable ------------------------------------
-subprocess.call('cd ..; ./build.bash', shell=True)
-
-
-# In[9]:
-
+# subprocess.call('cd ..;. ./build.bash', shell=True, executable='/bin/bash')
 
 # ------------ build input file and run --------------------------------------
 trange = range(roms_input['ntime'])
-# irange = range(roms_input['nriver'])
-irange = range(1, 2)
+irange = range(roms_input['nriver'])
 
 N = roms_input['N']
 ntime = len(trange)
@@ -286,16 +255,11 @@ iceplume_out['rho'] = np.zeros((ntime, N+1, nriver))
 iceplume_out['zr'] = np.zeros((ntime, N, nriver))
 iceplume_out['ent'] = np.zeros((ntime, N, nriver))
 iceplume_out['det'] = np.zeros((ntime, N, nriver))
-iceplume_out['detF'] = np.zeros((ntime, N, nriver))
-iceplume_out['detE'] = np.zeros((ntime, N, nriver))
 iceplume_out['detI'] = np.zeros((ntime, N, nriver))
 iceplume_out['tAm'] = np.zeros((ntime, N, nriver))
 iceplume_out['sAm'] = np.zeros((ntime, N, nriver))
 iceplume_out['m'] = np.zeros((ntime, N, nriver))
 iceplume_out['rhoAm'] = np.zeros((ntime, N, nriver))
-iceplume_out['tDet'] = np.zeros((ntime, N, nriver))
-iceplume_out['sDet'] = np.zeros((ntime, N, nriver))
-iceplume_out['rhoDet'] = np.zeros((ntime, N, nriver))
 
 iceplume_out['dye'] = np.zeros((ntime, ntracer, nriver))
 
@@ -340,22 +304,13 @@ for i, ti in enumerate(trange):
         iceplume_out['zr'][i, :, j] = data_zr[:, 1]
         iceplume_out['ent'][i, :, j] = data_zr[:, 2]
         iceplume_out['det'][i, :, j] = data_zr[:, 3]
-        iceplume_out['detF'][i, :, j] = data_zr[:, 9]
-        iceplume_out['detE'][i, :, j] = data_zr[:, 10]
         iceplume_out['detI'][i, :, j] = data_zr[:, 4]
         iceplume_out['tAm'][i, :, j] = data_zr[:, 5]
         iceplume_out['sAm'][i, :, j] = data_zr[:, 6]
         iceplume_out['m'][i, :, j] = data_zr[:, 7]
         iceplume_out['rhoAm'][i, :, j] = data_zr[:, 8]
-        iceplume_out['tDet'][i, :, j] = data_zr[:, 11]
-        iceplume_out['sDet'][i, :, j] = data_zr[:, 12]
-        iceplume_out['rhoDet'][i, :, j] = data_zr[:, 13]
 
         iceplume_out['dye'][i, :, j] = data_dye[2:]
-
-
-# In[10]:
-
 
 # --------------------- save outputs ----------------------
 pickle.dump(iceplume_out, open('./py_iceplume.pickle', 'wb'))

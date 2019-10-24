@@ -34,9 +34,8 @@ PROGRAM iceplume
 ! ==================================================================
 !
   open(unit=5, file='./inputs/iceplume_scalar.txt')
-  read(5, *)  Nreal, dx, dy, dt(ng),    &
-            & fIni, sIni, tIni, trcIni, &
-            & sgTyp, sgDep, sgLen
+  read(5, *)  Nreal, dx, dy, dt(ng), fIni, sIni, tIni, trcIni,          &
+     &        sgTyp, sgDep, sgLen
   close(unit=5)
   N(ng) = INT(nreal)
   Nr = N(ng)
@@ -66,13 +65,13 @@ PROGRAM iceplume
 !
   open(unit=5, file='./inputs/iceplume_zr.txt')
   DO K = 1, Nr
-          PLUME(ng) % zR(I, K) =                                       &
+          PLUME(ng) % zR(I, K) =                                        &
      &        0.5d0 * (PLUME(ng) % zW(I, K-1) + PLUME(ng) % zW(I, K))
-          PLUME(ng) % dz(I, K) =                                       &
+          PLUME(ng) % dz(I, K) =                                        &
      &        PLUME(ng) % zW(I, K) - PLUME(ng) % zW(I, K-1)
-    read(5, *)  PLUME(ng) % tpAm(I, K), PLUME(ng) % sAm(I, K),  &
-              & PLUME(ng) % vAm(I, K), PLUME(ng) % wAm(I, K),   &
-              & PLUME(ng) % trcAm(I, K, 3), PLUME(ng) % rhoAm(I, K)
+    read(5, *)  PLUME(ng) % tpAm(I, K), PLUME(ng) % sAm(I, K),          &
+     &          PLUME(ng) % vAm(I, K), PLUME(ng) % wAm(I, K),           &
+     &          PLUME(ng) % trcAm(I, K, 3), PLUME(ng) % rhoAm(I, K)
   ENDDO
     PLUME(ng) % rhoAm(I, N(ng)+1) = rhoAir
   close(unit=5)
@@ -82,11 +81,9 @@ PROGRAM iceplume
   DO K = 1, Nr
     IF (usePotTemp) THEN
       prRef = 101.d3*1.d-4
-      pr = prRef + &
-        & (abs(PLUME(ng) % zW(I, K))*rhoRef*g)*1.d-4  ! [dbar]
-      CALL SW_TEMP(PLUME(ng) % sAm(I, K),  &
-                 & PLUME(ng) % tpAm(I, K), &
-                 & pr, prRef, PLUME(ng) % tAm(I, K))
+      pr = prRef + (abs(PLUME(ng) % zW(I, K))*rhoRef*g)*1.d-4  ! [dbar]
+      CALL SW_TEMP(PLUME(ng) % sAm(I, K), PLUME(ng) % tpAm(I, K),       &
+     &             pr, prRef, PLUME(ng) % tAm(I, K))
     ELSE
       PLUME(ng) % tAm(I, K) = PLUME(ng) % tpAm(I, K)
     ENDIF
@@ -113,9 +110,8 @@ PROGRAM iceplume
 !
   write(*, *)  'Calculating ICEPLUME...'
 !
-  CALL ICEPLUME_CALC(ng, I, dx, dy,       &
-                   & fIni, tIni, sIni,    &
-                   & INT(sgTyp), sgDep, sgLen)
+  CALL ICEPLUME_CALC(ng, I, fIni, tIni, sIni,                           &
+     &               NINT(sgTyp), sgDep, sgLen)
 !
 ! ==================================================================
 ! Write to file
@@ -124,31 +120,25 @@ PROGRAM iceplume
   write(*, *)  'Writing output to files...'
 !
   open(unit=15, file='./outputs/iceplume_zw.txt')
-  write(15, '(A4, 99 A20)')  'lev', 'zW',                 &
-    & 'f', 'w', 'a', 't', 's', 'mInt', 'rho'
+  write(15, '(A4, 99 A20)')  'lev', 'zW', 'f', 'w', 'a', 't', 's',      &
+     &                       'mInt', 'rho'
   DO K = 0, Nr
-    write(15, '(I4, 99 E20.8)')  K, PLUME(ng) % zW(I, K), &
-      & PLUME(ng) % f(I, K), PLUME(ng) % w(I, K),         &
-      & PLUME(ng) % a(I, K), PLUME(ng) % t(I, K),         &
-      & PLUME(ng) % s(I, K), PLUME(ng) % mInt(I, K),      &
-      & PLUME(ng) % rho(I, K)
+    write(15, '(I4, 99 E20.8)')  K, PLUME(ng) % zW(I, K),               &
+     &  PLUME(ng) % f(I, K), PLUME(ng) % w(I, K),                       &
+     &  PLUME(ng) % a(I, K), PLUME(ng) % t(I, K),                       &
+     &  PLUME(ng) % s(I, K), PLUME(ng) % mInt(I, K),                    &
+     &  PLUME(ng) % rho(I, K)
   ENDDO
   close(unit=15)
   open(unit=15, file='./outputs/iceplume_zr.txt')
-  write(15, '(A4, 99 A20)')  'lev', 'zR', &
-    & 'ent', 'det', 'detI', 'tAm', 'sAm', 'm', 'rhoAm'
+  write(15, '(A4, 99 A20)')  'lev', 'zR', 'ent', 'det', 'detI', 'tAm',  &
+     &                       'sAm', 'm', 'rhoAm'
   DO K = 1, Nr
-    write(15, '(I4, 99 E20.8)')  K, PLUME(ng) % zR(I, K), &
-      & PLUME(ng) % ent(I, K), PLUME(ng) % det(I, K),     &
-      & REAL(PLUME(ng) % detI(I, K)),                     &
-      & PLUME(ng) % tAm(I, K), PLUME(ng) % sAm(I, K),     &
-      & PLUME(ng) % m(I, K), PLUME(ng) % rhoAm(I, K),     &
-      & PLUME(ng) % detF(I, K), PLUME(ng) % detE(I, K),   &
-      & PLUME(ng) % detTrc(I, K, itemp),                  &
-      & PLUME(ng) % detTrc(I, K, isalt),                  &
-      & RHO(PLUME(ng) % detTrc(I, K, itemp),              &
-      &     PLUME(ng) % detTrc(I, K, isalt),              &
-      &     PLUME(ng) % zR(I, K))
+    write(15, '(I4, 99 E20.8)')  K, PLUME(ng) % zR(I, K),               &
+     &  PLUME(ng) % ent(I, K), PLUME(ng) % det(I, K),                   &
+     &  REAL(PLUME(ng) % detI(I, K)),                                   &
+     &  PLUME(ng) % tAm(I, K), PLUME(ng) % sAm(I, K),                   &
+     &  PLUME(ng) % m(I, K), PLUME(ng) % rhoAm(I, K)
   ENDDO
   close(unit=15)
   open(unit=15, file='./outputs/iceplume_dye.txt')

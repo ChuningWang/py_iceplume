@@ -150,7 +150,7 @@ SUBROUTINE ICEPLUME_ENTRAIN(ng, I, iceDepthK,                           &
 !                                                                   !
 ! ==================================================================!
 !
-! Check to make sure plume hasn't reached neutral buoyancy in a lower
+! Check to make sure plume has not reached neutral buoyancy in a lower
 ! layer
 !
     IF (ISTATE .GT. -1) THEN
@@ -188,7 +188,7 @@ SUBROUTINE ICEPLUME_ENTRAIN(ng, I, iceDepthK,                           &
 !
 ! If the plume has not reached neutral buoyancy, then we assign a depth
 ! at which to calculate the next value and loop round to call the plume
-! model again. Make sure we're not at the surface
+! model again. Make sure we are not at the surface
 !
       IF (ISTATE .GT. -1) THEN
         zIn = zOut
