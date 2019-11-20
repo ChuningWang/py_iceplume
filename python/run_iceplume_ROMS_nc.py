@@ -53,7 +53,11 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
     fh_river = nc.Dataset(roms_river_file, 'r')
     grd = pyroms.grid.get_ROMS_grid('grd_temp', hist_file=roms_his_file,
                                     grid_file=roms_grid_file)
-    ntracer = len(fh.dimensions['tracer'])-2
+    ntracer_raw = len(fh.dimensions['tracer'])-2
+    if ntracer_raw == 0:
+        ntracer = 1
+    else:
+        ntracer = ntracer_raw
     N = len(fh.dimensions['N'])
 
     epos = fh_river.variables['river_Eposition'][:]
@@ -68,8 +72,9 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
     sgtemp_raw = fh_river.variables['subglacial_temp'][:]
     sgsalt_raw = fh_river.variables['subglacial_salt'][:]
     sgdye_raw = []
-    for j in range(ntracer):
-        sgdye_raw.append(fh_river.variables['subglacial_dye_%02d' % (j+1)][:])
+    if ntracer_raw > 0 :
+        for j in range(ntracer):
+            sgdye_raw.append(fh_river.variables['subglacial_dye_%02d' % (j+1)][:])
     if use_average:
         xloc = fh_river.variables['subglacial_Erange'][:]
         yloc = fh_river.variables['subglacial_Xrange'][:]
@@ -97,15 +102,22 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
             sgtrs[:, i] = np.interp(time, river_time, sgtrs_raw[:, i])
             sgtemp[:, i] = np.interp(time, river_time, sgtemp_raw)
             sgsalt[:, i] = np.interp(time, river_time, sgsalt_raw)
-            for j in range(ntracer):
-                sgdye[:, j, i] = np.interp(time, river_time, sgdye_raw[j, :])
+            if ntracer_raw > 0:
+                for j in range(ntracer):
+                    sgdye[:, j, i] = np.interp(time, river_time, sgdye_raw[j, :])
+            else:
+                sgdye[:, :, i] = 0
     else:
         for i in range(nriver):
             sgtrs[:, i] = np.interp(time, river_time, sgtrs_raw[:, i])
             sgtemp[:, i] = np.interp(time, river_time, sgtemp_raw[:, i])
             sgsalt[:, i] = np.interp(time, river_time, sgsalt_raw[:, i])
-            for j in range(ntracer):
-                sgdye[:, j, i] = np.interp(time, river_time, sgdye_raw[j, :, i])
+            if ntracer_raw > 0:
+                for j in range(ntracer):
+                    sgdye[:, j, i] = np.interp(time, river_time, sgdye_raw[j, :, i])
+            else:
+                for j in range(ntracer):
+                    sgdye[:, j, i] = 0
 
     for i in range(len(epos)):
         if rdir[i] == 0:
@@ -149,16 +161,18 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
     rhoAm = np.ma.zeros((ntime, N, nriver))
     v = np.ma.zeros((ntime, N, nriver))
     w = np.ma.zeros((ntime, N, nriver))
-    if ntracer>0:
-        dye = np.ma.zeros((ntime, ntracer, N, nriver))
+    dye = np.ma.zeros((ntime, ntracer, N, nriver))
 
     for i in range(nriver):
         zeta[:, i] = fh.variables['zeta'][:, epos_rho[i], xpos_rho[i]]
         salt[:, :, i] = fh.variables['salt'][:, :, epos_rho[i], xpos_rho[i]]
         temp[:, :, i] = fh.variables['temp'][:, :, epos_rho[i], xpos_rho[i]]
 
-        for j in range(ntracer):
-            dye[:, j, :, i] = fh.variables['dye_%02d' % (j+1)][:, :, epos_rho[i], xpos_rho[i]]
+        if ntracer_raw > 0:
+            for j in range(ntracer):
+                dye[:, j, :, i] = fh.variables['dye_%02d' % (j+1)][:, :, epos_rho[i], xpos_rho[i]]
+        else:
+            dye[:, :, :, i] = 0
         w[:, :, i] = 0.5*(fh.variables['w'][:, 1:, epos_rho[i], xpos_rho[i]]+
                           fh.variables['w'][:, :-1, epos_rho[i], xpos_rho[i]])
         if rdir[i] == 0:
@@ -210,7 +224,10 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
     roms_input['time'] = time
     roms_input['salt'] = salt
     roms_input['temp'] = temp
-    roms_input['dye'] = dye
+    if ntracer > 0:
+        roms_input['dye'] = dye
+    else:
+        roms_input['dye'] = np.zeros(salt.shape)
     roms_input['w'] = w
     roms_input['v'] = v
 
@@ -220,9 +237,9 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
 
 
 # -------------- generate inputs --------------------------------
-hist_file = '/Users/cw686/roms_archive/fjord_ks/outputs/fjord_his.nc'
-grid_file = '/Users/cw686/roms_archive/fjord_ks/fjord_grid.nc'
-river_file = '/Users/cw686/roms_archive/fjord_ks/fjord_river.nc'
+hist_file = '/Users/cw686/roms_archive/fjord_ks_slope/outputs90/fjord_his.nc'
+grid_file = '/Users/cw686/roms_archive/fjord_ks_slope/fjord_grid.nc'
+river_file = '/Users/cw686/roms_archive/fjord_ks_slope/fjord_river.nc'
 tracer1d = False
 use_average = True
 roms_input = make_input(hist_file, river_file, grid_file, tracer1d=tracer1d, use_average=use_average)
