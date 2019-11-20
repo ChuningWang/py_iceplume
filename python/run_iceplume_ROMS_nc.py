@@ -58,7 +58,7 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
         ntracer = 1
     else:
         ntracer = ntracer_raw
-    N = len(fh.dimensions['N'])
+    N = len(fh.dimensions['s_rho'])
 
     epos = fh_river.variables['river_Eposition'][:]
     xpos = fh_river.variables['river_Xposition'][:]
@@ -237,9 +237,13 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
 
 
 # -------------- generate inputs --------------------------------
-hist_file = '/Users/cw686/roms_archive/fjord_ks_slope/outputs90/fjord_his.nc'
-grid_file = '/Users/cw686/roms_archive/fjord_ks_slope/fjord_grid.nc'
-river_file = '/Users/cw686/roms_archive/fjord_ks_slope/fjord_river.nc'
+# hist_file  = '/Users/cw686/roms_archive/fjord_ks_slope/outputs90/fjord_his.nc'
+# grid_file  = '/Users/cw686/roms_archive/fjord_ks_slope/fjord_grid.nc'
+# river_file = '/Users/cw686/roms_archive/fjord_ks_slope/fjord_river.nc'
+app = 'fjord_ks_luv_lim'
+hist_file  = '/glade/scratch/chuning/' + app + '/outputs/fjord_avg.nc'
+grid_file  = '/glade/work/chuning/roms_archive/' +app + '/fjord_grid.nc'
+river_file = '/glade/work/chuning/roms_archive/' +app + '/fjord_river.nc'
 tracer1d = False
 use_average = True
 roms_input = make_input(hist_file, river_file, grid_file, tracer1d=tracer1d, use_average=use_average)
