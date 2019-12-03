@@ -70,7 +70,7 @@ MODULE mod_iceplume
   real(r8), parameter :: gRedBkg    = 0.03_r8
   real(r8), parameter :: CdBkg      = 0.0025_r8
   real(r8), parameter :: velBkg     = 0.03_r8
-  real(r8), parameter :: wIni       = 1.0_r8
+  real(r8), parameter :: wIni       = 0.1_r8
 !
   real(r8), parameter :: detSigma   = 0.5_r8
   real(r8), parameter :: avgAlpha   = 1.0_r8

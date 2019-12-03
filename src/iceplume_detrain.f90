@@ -144,14 +144,16 @@ SUBROUTINE ICEPLUME_DETRAIN(ng, I,                                      &
     rho2 = rhoH/h2
 !
     gRed = MAX(-g*(rho1-rho2)/rhoRef, gRedBkg)
-    KI = MAXLOC(PLUME(ng) % w(I, :), 1)
+!    KI = MAXLOC(PLUME(ng) % w(I, :), 1)
+    KI = plumeDepthK
     cff1 = PLUME(ng) % f(I, KI)/PLUME(ng) % w(I, KI)/lc
     Ri = gRed*cff1/(PLUME(ng) % w(I, KI)**2)
     IF (Ri .LT. 6.0) THEN
-      cff = (0.7*Ri**0.17)*PLUME(ng) % w(I, KI)
+      cff = (0.7*(Ri**0.17))*PLUME(ng) % w(I, KI)
     ELSE
       cff = 0.95*PLUME(ng) % w(I, KI)
     ENDIF
+    cff = cff*(SQRT(pi/2)*detSigma)
     minDz = det/lc/cff
   ENDIF
 !
