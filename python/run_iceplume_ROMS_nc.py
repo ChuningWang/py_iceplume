@@ -158,7 +158,8 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
     zeta = np.ma.zeros((ntime, nriver))
     salt = np.ma.zeros((ntime, N, nriver))
     temp = np.ma.zeros((ntime, N, nriver))
-    rhoAm = np.ma.zeros((ntime, N, nriver))
+    sAm2 = np.ma.zeros((ntime, N, nriver))
+    tAm2 = np.ma.zeros((ntime, N, nriver))
     v = np.ma.zeros((ntime, N, nriver))
     w = np.ma.zeros((ntime, N, nriver))
     dye = np.ma.zeros((ntime, ntracer, N, nriver))
@@ -187,13 +188,14 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
 
     for i in range(nriver):
         if use_average:
-            stemp = fh.variables['salt'][:, :, int(xloc[0, i]):int(xloc[1, i])+1, int(yloc[0, i]):int(yloc[1, i])+1].mean(axis=(-2, -1))
             ttemp = fh.variables['temp'][:, :, int(xloc[0, i]):int(xloc[1, i])+1, int(yloc[0, i]):int(yloc[1, i])+1].mean(axis=(-2, -1))
+            stemp = fh.variables['salt'][:, :, int(xloc[0, i]):int(xloc[1, i])+1, int(yloc[0, i]):int(yloc[1, i])+1].mean(axis=(-2, -1))
         else:
-            stemp = salt[:, :, i]
             ttemp = temp[:, :, i]
+            stemp = salt[:, :, i]
         np.set_printoptions(formatter={'float': '{: 15.10f}'.format})
-        rhoAm[:, :, i] = gsw.rho(stemp, ttemp, np.abs(zr[:, :, i]))
+        tAm2 = ttemp
+        sAm2 = stemp
 
     fh.close()
 
@@ -231,19 +233,20 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
     roms_input['w'] = w
     roms_input['v'] = v
 
-    roms_input['rhoAm'] = rhoAm
+    roms_input['tAm2'] = tAm2
+    roms_input['sAm2'] = sAm2
 
     return roms_input
 
 
 # -------------- generate inputs --------------------------------
-app = 'fjord_ks_luv'
-hist_file  = '/Users/cw686/roms_archive/' + app + '/outputs_mix3/fjord_his.nc'
-grid_file  = '/Users/cw686/roms_archive/' + app + '/fjord_grid.nc'
-river_file = '/Users/cw686/roms_archive/' + app + '/fjord_river3.nc'
-# hist_file  = '/glade/scratch/chuning/' + app + '/outputs/fjord_avg.nc'
-# grid_file  = '/glade/work/chuning/roms_archive/' +app + '/fjord_grid.nc'
-# river_file = '/glade/work/chuning/roms_archive/' +app + '/fjord_river.nc'
+app = 'fjord_ks_luv1'
+# hist_file  = '/Users/cw686/roms_archive/' + app + '/outputs_mix3/fjord_his.nc'
+# grid_file  = '/Users/cw686/roms_archive/' + app + '/fjord_grid.nc'
+# river_file = '/Users/cw686/roms_archive/' + app + '/fjord_river3.nc'
+hist_file  = '/glade/scratch/chuning/' + app + '/outputs/fjord_avg.nc'
+grid_file  = '/glade/work/chuning/roms_archive/' +app + '/fjord_grid.nc'
+river_file = '/glade/work/chuning/roms_archive/' +app + '/fjord_river.nc'
 tracer1d = False
 use_average = True
 roms_input = make_input(hist_file, river_file, grid_file, tracer1d=tracer1d, use_average=use_average)
@@ -294,7 +297,8 @@ for i, ti in enumerate(trange):
                            roms_input['v'][ti, :, ri],
                            roms_input['w'][ti, :, ri],
                            roms_input['dye'][ti, :, :, ri],
-                           roms_input['rhoAm'][ti, :, ri]
+                           roms_input['tAm2'][ti, :, ri],
+                           roms_input['sAm2'][ti, :, ri]
                           )).T, fmt='%20.10e')
         np.savetxt('../inputs/iceplume_scalar.txt',
                 np.array([roms_input['N'], roms_input['dx'][ri],

@@ -67,7 +67,7 @@ MODULE mod_iceplume
 !  real(r8), parameter :: Cd         = 0.0025_r8
 !
   real(r8), parameter :: RiB        = 1.0_r8
-  real(r8), parameter :: gRedBkg    = 0.03_r8
+  real(r8), parameter :: gRedBkg    = 0.01_r8
   real(r8), parameter :: CdBkg      = 0.0025_r8
   real(r8), parameter :: velBkg     = 0.03_r8
   real(r8), parameter :: wIni       = 0.1_r8
@@ -150,6 +150,11 @@ MODULE mod_iceplume
     real(r8), pointer :: dir(:)
     real(r8), pointer :: trs(:)
 !
+    real(r8), pointer :: RiC(:)
+    real(r8), pointer :: gRedC(:)
+    real(r8), pointer :: ldC(:)
+    real(r8), pointer :: wdC(:)
+!
 ! Plume state (omega surface).
 !
     real(r8), pointer :: zW(:, :)
@@ -166,6 +171,8 @@ MODULE mod_iceplume
     real(r8), pointer :: zR(:, :)
     real(r8), pointer :: tAm(:, :)
     real(r8), pointer :: sAm(:, :)
+    real(r8), pointer :: tAm2(:, :)
+    real(r8), pointer :: sAm2(:, :)
     real(r8), pointer :: vAm(:, :)
     real(r8), pointer :: wAm(:, :)
     real(r8), pointer :: tpAm(:, :)
@@ -232,6 +239,11 @@ MODULE mod_iceplume
       allocate( PLUME(ng) % dir (1:Nsrc(ng)) )
       allocate( PLUME(ng) % trs (1:Nsrc(ng)) )
 !
+      allocate( PLUME(ng) % RiC (1:Nsrc(ng)) )
+      allocate( PLUME(ng) % gRedC (1:Nsrc(ng)) )
+      allocate( PLUME(ng) % ldC (1:Nsrc(ng)) )
+      allocate( PLUME(ng) % wdC (1:Nsrc(ng)) )
+!
       allocate( PLUME(ng) % zW   (Nsrc(ng), 0:N(ng)) )
       allocate( PLUME(ng) % f    (Nsrc(ng), 0:N(ng)) )
       allocate( PLUME(ng) % w    (Nsrc(ng), 0:N(ng)) )
@@ -244,6 +256,8 @@ MODULE mod_iceplume
       allocate( PLUME(ng) % zR    (Nsrc(ng), N(ng)  ) )
       allocate( PLUME(ng) % tAm   (Nsrc(ng), N(ng)  ) )
       allocate( PLUME(ng) % sAm   (Nsrc(ng), N(ng)  ) )
+      allocate( PLUME(ng) % tAm2  (Nsrc(ng), N(ng)  ) )
+      allocate( PLUME(ng) % sAm2  (Nsrc(ng), N(ng)  ) )
       allocate( PLUME(ng) % vAm   (Nsrc(ng), N(ng)  ) )
       allocate( PLUME(ng) % wAm   (Nsrc(ng), N(ng)  ) )
       allocate( PLUME(ng) % tpAm  (Nsrc(ng), N(ng)  ) )

@@ -12,6 +12,7 @@ PROGRAM iceplume
   real(r8) :: fIni, sIni, tIni, trcIni
   real(r8) :: sgTyp, sgDep, sgLen
   real(r8) :: RHO
+  real(r8) :: cff
 !
 ! Local variable declarations.
 !
@@ -71,7 +72,8 @@ PROGRAM iceplume
      &        PLUME(ng) % zW(I, K) - PLUME(ng) % zW(I, K-1)
     read(5, *)  PLUME(ng) % tpAm(I, K), PLUME(ng) % sAm(I, K),          &
      &          PLUME(ng) % vAm(I, K), PLUME(ng) % wAm(I, K),           &
-     &          PLUME(ng) % trcAm(I, K, 3), PLUME(ng) % rhoAm(I, K)
+     &          PLUME(ng) % trcAm(I, K, 3), PLUME(ng) % tAm2(I, K),     &
+     &          PLUME(ng) % sAm2(I, K)
   ENDDO
     PLUME(ng) % rhoAm(I, N(ng)+1) = rhoAir
   close(unit=5)
@@ -97,12 +99,14 @@ PROGRAM iceplume
 !
 ! Calculate rho-layer depth, thickness, and ambient density
 !
-!         DO K = 1, Nr
-!           PLUME(ng) % rhoAm(I, K) =                                    &
-!      &        RHO(PLUME(ng) % tAm(I, K),                               &
-!      &            PLUME(ng) % sAm(I, K),                               &
-!      &            PLUME(ng) % zR(I, K))
-!         ENDDO
+         DO K = 1, Nr
+      CALL SW_TEMP(PLUME(ng) % sAm2(I, K), PLUME(ng) % tAm2(I, K),      &
+     &             pr, prRef, cff)
+           PLUME(ng) % rhoAm(I, K) =                                    &
+      &        RHO(cff,                                                 &
+      &            PLUME(ng) % sAm2(I, K),                              &
+      &            PLUME(ng) % zR(I, K))
+         ENDDO
 !
 ! ==================================================================
 ! Call main function
@@ -143,5 +147,9 @@ PROGRAM iceplume
   close(unit=15)
   open(unit=15, file='./outputs/iceplume_dye.txt')
     write(15, '(99 E20.8)') PLUME(ng) % trc(I, :)
+  close(unit=15)
+  open(unit=15, file='./outputs/iceplume_diag.txt')
+    write(15, '(99 E20.8)') PLUME(ng) % RiC(I),                         &
+     &  PLUME(ng) % gRedC(I), PLUME(ng) % ldC(I), PLUME(ng) % wdC(I)
   close(unit=15)
 END PROGRAM

@@ -70,10 +70,6 @@ SUBROUTINE ICEPLUME_DETRAIN(ng, I,                                      &
   logical  :: isBottom = .FALSE.
   real(r8) :: RHO
 !
-! For BV frequency formula
-!
-  real(r8) :: bvf0, bvf
-!
 ! For detrainment weight function
 !
   real(r8) :: detSum
@@ -121,7 +117,11 @@ SUBROUTINE ICEPLUME_DETRAIN(ng, I,                                      &
 ! Strong density jump. Always use momentum continuity.
 !
     cff = 0.95*PLUME(ng) % w(I, N(ng))
-    minDz = det/lc/cff
+  PLUME(ng) % gRedC(I) = 9999.0
+  PLUME(ng) % ldC(I) = &
+    & PLUME(ng) % f(I, N(ng)-1)/PLUME(ng) % w(I, N(ng))/lc
+  PLUME(ng) % wdC(I) = PLUME(ng) % w(I, N(ng))
+  PLUME(ng) % RiC(I) = 9999.0
   ELSE
 !
 ! Use piecewise function.
@@ -144,8 +144,7 @@ SUBROUTINE ICEPLUME_DETRAIN(ng, I,                                      &
     rho2 = rhoH/h2
 !
     gRed = MAX(-g*(rho1-rho2)/rhoRef, gRedBkg)
-!    KI = MAXLOC(PLUME(ng) % w(I, :), 1)
-    KI = plumeDepthK
+    KI = MAXLOC(PLUME(ng) % w(I, :), 1)
     cff1 = PLUME(ng) % f(I, KI)/PLUME(ng) % w(I, KI)/lc
     Ri = gRed*cff1/(PLUME(ng) % w(I, KI)**2)
     IF (Ri .LT. 6.0) THEN
@@ -153,9 +152,13 @@ SUBROUTINE ICEPLUME_DETRAIN(ng, I,                                      &
     ELSE
       cff = 0.95*PLUME(ng) % w(I, KI)
     ENDIF
-    cff = cff*(SQRT(pi/2)*detSigma)
-    minDz = det/lc/cff
+  PLUME(ng) % gRedC(I) = gRed
+  PLUME(ng) % ldC(I) = cff1
+  PLUME(ng) % wdC(I) = PLUME(ng) % w(I, KI)
+  PLUME(ng) % RiC(I) = Ri
   ENDIF
+  cff = cff*(SQRT(pi/2)*detSigma)
+  minDz = det/lc/cff
 !
 ! Determine the vertical extent of detrainment plume.
 !
