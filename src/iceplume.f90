@@ -24,7 +24,7 @@ PROGRAM iceplume
 !
   write(*, *)  ''
   write(*, *)  '==================================================='
-  write(*, *)  'ICEPLUME Stand-alone Model'
+  write(*, *)  'ICEPLUME Stand-alone Version'
   write(*, *)  'v1.0'
   write(*, *)  'Chuning Wang, chuning@marine.rutgers.edu'
   write(*, *)  '==================================================='
@@ -35,12 +35,12 @@ PROGRAM iceplume
 ! ==================================================================
 !
   open(unit=5, file='./inputs/iceplume_scalar.txt')
-  read(5, *)  Nreal, dx, dy, dt(ng), fIni, sIni, tIni, trcIni,          &
-     &        sgTyp, sgDep, sgLen
+  read(5, *)  Nreal, dx, dy, dt, sgTyp, sgDep, sgLen,                   &
+     &        fIni, sIni, tIni, trcIni
   close(unit=5)
   N(ng) = INT(nreal)
-  Nr = N(ng)
-  NTr = NT(ng)
+  Nr    = N(ng)
+  NTr   = NT(ng)
 !
 ! ==================================================================
 ! Allocate variables
@@ -127,7 +127,7 @@ PROGRAM iceplume
   write(15, '(A4, 99 A20)')  'lev', 'zW', 'f', 'w', 'a', 't', 's',      &
      &                       'mInt', 'rho'
   DO K = 0, Nr
-    write(15, '(I4, 99 E20.8)')  K, PLUME(ng) % zW(I, K),               &
+    write(15, '(I4, 99 E30.15E3)')  K, PLUME(ng) % zW(I, K),            &
      &  PLUME(ng) % f(I, K), PLUME(ng) % w(I, K),                       &
      &  PLUME(ng) % a(I, K), PLUME(ng) % t(I, K),                       &
      &  PLUME(ng) % s(I, K), PLUME(ng) % mInt(I, K),                    &
@@ -138,7 +138,7 @@ PROGRAM iceplume
   write(15, '(A4, 99 A20)')  'lev', 'zR', 'ent', 'det', 'detI', 'tAm',  &
      &                       'sAm', 'm', 'rhoAm'
   DO K = 1, Nr
-    write(15, '(I4, 99 E20.8)')  K, PLUME(ng) % zR(I, K),               &
+    write(15, '(I4, 99 E30.15E3)')  K, PLUME(ng) % zR(I, K),            &
      &  PLUME(ng) % ent(I, K), PLUME(ng) % det(I, K),                   &
      &  REAL(PLUME(ng) % detI(I, K)),                                   &
      &  PLUME(ng) % tAm(I, K), PLUME(ng) % sAm(I, K),                   &
@@ -146,10 +146,6 @@ PROGRAM iceplume
   ENDDO
   close(unit=15)
   open(unit=15, file='./outputs/iceplume_dye.txt')
-    write(15, '(99 E20.8)') PLUME(ng) % trc(I, :)
-  close(unit=15)
-  open(unit=15, file='./outputs/iceplume_diag.txt')
-    write(15, '(99 E20.8)') PLUME(ng) % RiC(I),                         &
-     &  PLUME(ng) % gRedC(I), PLUME(ng) % ldC(I), PLUME(ng) % wdC(I)
+    write(15, '(99 E30.15E3)') PLUME(ng) % trc(I, :)
   close(unit=15)
 END PROGRAM

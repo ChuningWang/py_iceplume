@@ -194,8 +194,8 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
             ttemp = temp[:, :, i]
             stemp = salt[:, :, i]
         np.set_printoptions(formatter={'float': '{: 15.10f}'.format})
-        tAm2 = ttemp
-        sAm2 = stemp
+        tAm2[:, :, i] = ttemp
+        sAm2[:, :, i] = stemp
 
     fh.close()
 
@@ -240,57 +240,54 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
 
 
 # -------------- generate inputs --------------------------------
-app = 'fjord_ks_luv1'
-# hist_file  = '/Users/cw686/roms_archive/' + app + '/outputs_mix3/fjord_his.nc'
-# grid_file  = '/Users/cw686/roms_archive/' + app + '/fjord_grid.nc'
-# river_file = '/Users/cw686/roms_archive/' + app + '/fjord_river3.nc'
-hist_file  = '/glade/scratch/chuning/' + app + '/outputs/fjord_avg.nc'
-grid_file  = '/glade/work/chuning/roms_archive/' +app + '/fjord_grid.nc'
-river_file = '/glade/work/chuning/roms_archive/' +app + '/fjord_river.nc'
-tracer1d = False
+app         = 'fjord_ks_luv'
+hist_file   = '/Users/cw686/roms_outputs/' + app + '/outputs/fjord_avg.nc'
+grid_file   = '/Users/cw686/roms_archive/' + app + '/fjord_grid.nc'
+river_file  = '/Users/cw686/roms_archive/' + app + '/fjord_river.nc'
+tracer1d    = False
 use_average = True
-roms_input = make_input(hist_file, river_file, grid_file, tracer1d=tracer1d, use_average=use_average)
+roms_input  = make_input(hist_file, river_file, grid_file, tracer1d=tracer1d, use_average=use_average)
 
 # ------------ build the executable ------------------------------------
-# subprocess.call('cd ..;. ./build.bash', shell=True, executable='/bin/bash')
+subprocess.call('cd ..;. ./build.bash', shell=True)
 
 # ------------ build input file and run --------------------------------------
-trange = range(roms_input['ntime'])
-irange = range(roms_input['nriver'])
+trange  = range(roms_input['ntime'])
+irange  = range(roms_input['nriver'])
 
-N = roms_input['N']
-ntime = len(trange)
-nriver = len(irange)
+N       = roms_input['N']
+ntime   = len(trange)
+nriver  = len(irange)
 ntracer = roms_input['ntracer']
 
-iceplume_out = {}
-iceplume_out['time'] = roms_input['time'][trange]
-iceplume_out['epos'] = roms_input['epos'][irange]
-iceplume_out['xpos'] = roms_input['xpos'][irange]
-iceplume_out['zw'] = np.zeros((ntime, N+1, nriver))
-iceplume_out['f'] = np.zeros((ntime, N+1, nriver))
-iceplume_out['w'] = np.zeros((ntime, N+1, nriver))
-iceplume_out['t'] = np.zeros((ntime, N+1, nriver))
-iceplume_out['s'] = np.zeros((ntime, N+1, nriver))
-iceplume_out['a'] = np.zeros((ntime, N+1, nriver))
-iceplume_out['mInt'] = np.zeros((ntime, N+1, nriver))
-iceplume_out['rho'] = np.zeros((ntime, N+1, nriver))
+iceplume_out          = {}
+iceplume_out['time']  = roms_input['time'][trange]
+iceplume_out['epos']  = roms_input['epos'][irange]
+iceplume_out['xpos']  = roms_input['xpos'][irange]
+iceplume_out['zw']    = np.zeros((ntime, N+1, nriver))
+iceplume_out['f']     = np.zeros((ntime, N+1, nriver))
+iceplume_out['w']     = np.zeros((ntime, N+1, nriver))
+iceplume_out['t']     = np.zeros((ntime, N+1, nriver))
+iceplume_out['s']     = np.zeros((ntime, N+1, nriver))
+iceplume_out['a']     = np.zeros((ntime, N+1, nriver))
+iceplume_out['mInt']  = np.zeros((ntime, N+1, nriver))
+iceplume_out['rho']   = np.zeros((ntime, N+1, nriver))
 
-iceplume_out['zr'] = np.zeros((ntime, N, nriver))
-iceplume_out['ent'] = np.zeros((ntime, N, nriver))
-iceplume_out['det'] = np.zeros((ntime, N, nriver))
-iceplume_out['detI'] = np.zeros((ntime, N, nriver))
-iceplume_out['tAm'] = np.zeros((ntime, N, nriver))
-iceplume_out['sAm'] = np.zeros((ntime, N, nriver))
-iceplume_out['m'] = np.zeros((ntime, N, nriver))
+iceplume_out['zr']    = np.zeros((ntime, N, nriver))
+iceplume_out['ent']   = np.zeros((ntime, N, nriver))
+iceplume_out['det']   = np.zeros((ntime, N, nriver))
+iceplume_out['detI']  = np.zeros((ntime, N, nriver))
+iceplume_out['tAm']   = np.zeros((ntime, N, nriver))
+iceplume_out['sAm']   = np.zeros((ntime, N, nriver))
+iceplume_out['m']     = np.zeros((ntime, N, nriver))
 iceplume_out['rhoAm'] = np.zeros((ntime, N, nriver))
 
-iceplume_out['dye'] = np.zeros((ntime, ntracer, nriver))
+iceplume_out['dye']   = np.zeros((ntime, ntracer, nriver))
 
 for i, ti in enumerate(trange):
     for j, ri in enumerate(irange):
         np.savetxt('../inputs/iceplume_zw.txt',
-                np.array([roms_input['zw'][ti, :, ri]]).T, fmt='%20.10e')
+                np.array([roms_input['zw'][ti, :, ri]]).T, fmt='%30.15e')
         np.savetxt('../inputs/iceplume_zr.txt',
                 np.vstack((roms_input['temp'][ti, :, ri],
                            roms_input['salt'][ti, :, ri],
@@ -299,15 +296,17 @@ for i, ti in enumerate(trange):
                            roms_input['dye'][ti, :, :, ri],
                            roms_input['tAm2'][ti, :, ri],
                            roms_input['sAm2'][ti, :, ri]
-                          )).T, fmt='%20.10e')
+                          )).T, fmt='%30.15e')
         np.savetxt('../inputs/iceplume_scalar.txt',
-                np.array([roms_input['N'], roms_input['dx'][ri],
-                          roms_input['dy'][ri], roms_input['dt'],
-                          roms_input['sgtrs'][ti, ri], roms_input['sgtemp'][ti, ri],
-                          roms_input['sgsalt'][ti, ri], roms_input['sgdye'][ti, :, ri],
-                          roms_input['sgtyp'][ri], roms_input['sgdep'][ri],
-                          roms_input['sglen'][ri]
-                         ]), fmt='%20.10e')
+                np.concatenate((
+                    np.array([roms_input['N'], roms_input['dx'][ri],
+                              roms_input['dy'][ri], roms_input['dt'],
+                              roms_input['sgtyp'][ri], roms_input['sgdep'][ri],
+                              roms_input['sglen'][ri],
+                              roms_input['sgtrs'][ti, ri],
+                              roms_input['sgtemp'][ti, ri],
+                              roms_input['sgsalt'][ti, ri]
+                             ]), roms_input['sgdye'][ti, :, ri])), fmt='%30.15e')
 
         # ------------ run the executable --------------------------------------
         subprocess.call('cd ..; ./iceplume_test.exe', shell=True)
@@ -317,26 +316,25 @@ for i, ti in enumerate(trange):
         data_zw = np.loadtxt('../outputs/iceplume_zw.txt', skiprows=1)
         data_dye = np.loadtxt('../outputs/iceplume_dye.txt')
 
-        iceplume_out['zw'][i, :, j] = data_zw[:, 1]
-        iceplume_out['f'][i, :, j] = data_zw[:, 2]
-        iceplume_out['w'][i, :, j] = data_zw[:, 3]
-        iceplume_out['a'][i, :, j] = data_zw[:, 4]
-        iceplume_out['t'][i, :, j] = data_zw[:, 5]
-        iceplume_out['s'][i, :, j] = data_zw[:, 6]
-        iceplume_out['mInt'][i, :, j] = data_zw[:, 7]
-        iceplume_out['rho'][i, :, j] = data_zw[:, 8]
+        iceplume_out['zw'][i, :, j]    = data_zw[:, 1]
+        iceplume_out['f'][i, :, j]     = data_zw[:, 2]
+        iceplume_out['w'][i, :, j]     = data_zw[:, 3]
+        iceplume_out['a'][i, :, j]     = data_zw[:, 4]
+        iceplume_out['t'][i, :, j]     = data_zw[:, 5]
+        iceplume_out['s'][i, :, j]     = data_zw[:, 6]
+        iceplume_out['mInt'][i, :, j]  = data_zw[:, 7]
+        iceplume_out['rho'][i, :, j]   = data_zw[:, 8]
 
-        iceplume_out['zr'][i, :, j] = data_zr[:, 1]
-        iceplume_out['ent'][i, :, j] = data_zr[:, 2]
-        iceplume_out['det'][i, :, j] = data_zr[:, 3]
-        iceplume_out['detI'][i, :, j] = data_zr[:, 4]
-        iceplume_out['tAm'][i, :, j] = data_zr[:, 5]
-        iceplume_out['sAm'][i, :, j] = data_zr[:, 6]
-        iceplume_out['m'][i, :, j] = data_zr[:, 7]
+        iceplume_out['zr'][i, :, j]    = data_zr[:, 1]
+        iceplume_out['ent'][i, :, j]   = data_zr[:, 2]
+        iceplume_out['det'][i, :, j]   = data_zr[:, 3]
+        iceplume_out['detI'][i, :, j]  = data_zr[:, 4]
+        iceplume_out['tAm'][i, :, j]   = data_zr[:, 5]
+        iceplume_out['sAm'][i, :, j]   = data_zr[:, 6]
+        iceplume_out['m'][i, :, j]     = data_zr[:, 7]
         iceplume_out['rhoAm'][i, :, j] = data_zr[:, 8]
 
-        iceplume_out['dye'][i, :, j] = data_dye[2:]
+        iceplume_out['dye'][i, :, j]   = data_dye[2:]
 
 # --------------------- save outputs ----------------------
 pickle.dump(iceplume_out, open('./py_iceplume.pickle', 'wb'))
-

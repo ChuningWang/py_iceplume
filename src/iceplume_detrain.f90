@@ -114,14 +114,9 @@ SUBROUTINE ICEPLUME_DETRAIN(ng, I,                                      &
 !
   IF (isSurface) THEN
 !
-! Strong density jump. Always use momentum continuity.
+! Strong density jump. Always use momentum conservation.
 !
-    cff = 0.95*PLUME(ng) % w(I, N(ng))
-  PLUME(ng) % gRedC(I) = 9999.0
-  PLUME(ng) % ldC(I) = &
-    & PLUME(ng) % f(I, N(ng)-1)/PLUME(ng) % w(I, N(ng))/lc
-  PLUME(ng) % wdC(I) = PLUME(ng) % w(I, N(ng))
-  PLUME(ng) % RiC(I) = 9999.0
+    maxVel = 0.95*PLUME(ng) % w(I, N(ng))
   ELSE
 !
 ! Use piecewise function.
@@ -148,17 +143,13 @@ SUBROUTINE ICEPLUME_DETRAIN(ng, I,                                      &
     cff1 = PLUME(ng) % f(I, KI)/PLUME(ng) % w(I, KI)/lc
     Ri = gRed*cff1/(PLUME(ng) % w(I, KI)**2)
     IF (Ri .LT. 6.0) THEN
-      cff = (0.7*(Ri**0.17))*PLUME(ng) % w(I, KI)
+      maxVel = (0.7*(Ri**0.17))*PLUME(ng) % w(I, KI)
     ELSE
-      cff = 0.95*PLUME(ng) % w(I, KI)
+      maxVel = 0.95*PLUME(ng) % w(I, KI)
     ENDIF
-  PLUME(ng) % gRedC(I) = gRed
-  PLUME(ng) % ldC(I) = cff1
-  PLUME(ng) % wdC(I) = PLUME(ng) % w(I, KI)
-  PLUME(ng) % RiC(I) = Ri
   ENDIF
-  cff = cff*(SQRT(pi/2)*detSigma)
-  minDz = det/lc/cff
+  maxVel = maxVel*(SQRT(pi/2)*detSigma)
+  minDz = det/lc/maxVel
 !
 ! Determine the vertical extent of detrainment plume.
 !

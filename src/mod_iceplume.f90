@@ -125,15 +125,6 @@ MODULE mod_iceplume
 ! trcCum        - accumulative tracer concentration                    !
 ! trcIni        - initial tracer concentration in discharge            !
 !                                                                      !
-!                                                                      !
-! For calculation of virtual tracer flux                               !
-! dzNew         - new layer thickness [m]                              !
-! zWNew         - new omega surface depth [m]                          !
-! zLNew         - new box vertical boundary [m]                        !
-! dzWei         - new layer weight function                            !
-! trcL          - new box tracer concentration                         !
-! trcNew        - updated tracer concentration                         !
-!                                                                      !
 ! =====================================================================!
 !
   TYPE T_PLUME
@@ -149,11 +140,6 @@ MODULE mod_iceplume
     real(r8), pointer :: dy(:)
     real(r8), pointer :: dir(:)
     real(r8), pointer :: trs(:)
-!
-    real(r8), pointer :: RiC(:)
-    real(r8), pointer :: gRedC(:)
-    real(r8), pointer :: ldC(:)
-    real(r8), pointer :: wdC(:)
 !
 ! Plume state (omega surface).
 !
@@ -171,12 +157,12 @@ MODULE mod_iceplume
     real(r8), pointer :: zR(:, :)
     real(r8), pointer :: tAm(:, :)
     real(r8), pointer :: sAm(:, :)
-    real(r8), pointer :: tAm2(:, :)
-    real(r8), pointer :: sAm2(:, :)
     real(r8), pointer :: vAm(:, :)
     real(r8), pointer :: wAm(:, :)
     real(r8), pointer :: tpAm(:, :)
     real(r8), pointer :: rhoAm(:, :)
+    real(r8), pointer :: tAm2(:, :)
+    real(r8), pointer :: sAm2(:, :)
 !
 ! Plume shape parameters.
 !
@@ -206,15 +192,6 @@ MODULE mod_iceplume
     real(r8), pointer :: trc(:, :)
     real(r8), pointer :: trcCum(:, :)
     real(r8), pointer :: trcIni(:, :)
-!
-! For calculation of virtual tracer flux.
-!
-    real(r8), pointer :: dzNew(:, :)
-    real(r8), pointer :: zWNew(:, :)
-    real(r8), pointer :: zLNew(:, :)
-    real(r8), pointer :: dzWei(:, :)
-    real(r8), pointer :: trcL(:, :, :)
-    real(r8), pointer :: trcNew(:, :, :)
   END TYPE T_PLUME
 !
   TYPE (T_PLUME), allocatable :: PLUME(:)
@@ -239,11 +216,6 @@ MODULE mod_iceplume
       allocate( PLUME(ng) % dir (1:Nsrc(ng)) )
       allocate( PLUME(ng) % trs (1:Nsrc(ng)) )
 !
-      allocate( PLUME(ng) % RiC (1:Nsrc(ng)) )
-      allocate( PLUME(ng) % gRedC (1:Nsrc(ng)) )
-      allocate( PLUME(ng) % ldC (1:Nsrc(ng)) )
-      allocate( PLUME(ng) % wdC (1:Nsrc(ng)) )
-!
       allocate( PLUME(ng) % zW   (Nsrc(ng), 0:N(ng)) )
       allocate( PLUME(ng) % f    (Nsrc(ng), 0:N(ng)) )
       allocate( PLUME(ng) % w    (Nsrc(ng), 0:N(ng)) )
@@ -256,12 +228,12 @@ MODULE mod_iceplume
       allocate( PLUME(ng) % zR    (Nsrc(ng), N(ng)  ) )
       allocate( PLUME(ng) % tAm   (Nsrc(ng), N(ng)  ) )
       allocate( PLUME(ng) % sAm   (Nsrc(ng), N(ng)  ) )
-      allocate( PLUME(ng) % tAm2  (Nsrc(ng), N(ng)  ) )
-      allocate( PLUME(ng) % sAm2  (Nsrc(ng), N(ng)  ) )
       allocate( PLUME(ng) % vAm   (Nsrc(ng), N(ng)  ) )
       allocate( PLUME(ng) % wAm   (Nsrc(ng), N(ng)  ) )
       allocate( PLUME(ng) % tpAm  (Nsrc(ng), N(ng)  ) )
       allocate( PLUME(ng) % rhoAm (Nsrc(ng), N(ng)+1) )
+      allocate( PLUME(ng) % tAm2  (Nsrc(ng), N(ng)  ) )
+      allocate( PLUME(ng) % sAm2  (Nsrc(ng), N(ng)  ) )
 !
       allocate( PLUME(ng) % lm (Nsrc(ng), 0:N(ng)) )
       allocate( PLUME(ng) % lc (Nsrc(ng), 0:N(ng)) )
@@ -281,12 +253,5 @@ MODULE mod_iceplume
       allocate( PLUME(ng) % trc    (Nsrc(ng), NT(ng)) )
       allocate( PLUME(ng) % trcCum (Nsrc(ng), NT(ng)) )
       allocate( PLUME(ng) % trcIni (Nsrc(ng), NT(ng)) )
-!
-      allocate( PLUME(ng) % dzNew  (Nsrc(ng), N(ng)) )
-      allocate( PLUME(ng) % zWNew  (Nsrc(ng), 0:N(ng)) )
-      allocate( PLUME(ng) % zLNew  (Nsrc(ng), 0:N(ng)) )
-      allocate( PLUME(ng) % dzWei  (Nsrc(ng), N(ng)) )
-      allocate( PLUME(ng) % trcL   (Nsrc(ng), N(ng), NT(ng)) )
-      allocate( PLUME(ng) % trcNew (Nsrc(ng), N(ng), NT(ng)) )
     END SUBROUTINE allocate_iceplume
 END
