@@ -124,10 +124,10 @@ PROGRAM iceplume
   write(*, *)  'Writing output to files...'
 !
   open(unit=15, file='./outputs/iceplume_zw.txt')
-  write(15, '(A4, 99 A30)')  'lev', 'zW', 'f', 'w', 'a', 't', 's',      &
+  write(15, '(A4, 99 A25)')  'lev', 'zW', 'f', 'w', 'a', 't', 's',      &
      &                       'mInt', 'rho'
   DO K = 0, Nr
-    write(15, '(I4, 99 E30.15E3)')  K, PLUME(ng) % zW(I, K),            &
+    write(15, '(I4, 99 E25.15E3)')  K, PLUME(ng) % zW(I, K),            &
      &  PLUME(ng) % f(I, K), PLUME(ng) % w(I, K),                       &
      &  PLUME(ng) % a(I, K), PLUME(ng) % t(I, K),                       &
      &  PLUME(ng) % s(I, K), PLUME(ng) % mInt(I, K),                    &
@@ -135,10 +135,10 @@ PROGRAM iceplume
   ENDDO
   close(unit=15)
   open(unit=15, file='./outputs/iceplume_zr.txt')
-  write(15, '(A4, 99 A30)')  'lev', 'zR', 'ent', 'det', 'detI', 'tAm',  &
+  write(15, '(A4, 99 A25)')  'lev', 'zR', 'ent', 'det', 'detI', 'tAm',  &
      &                       'sAm', 'm', 'rhoAm'
   DO K = 1, Nr
-    write(15, '(I4, 99 E30.15E3)')  K, PLUME(ng) % zR(I, K),            &
+    write(15, '(I4, 99 E25.15E3)')  K, PLUME(ng) % zR(I, K),            &
      &  PLUME(ng) % ent(I, K), PLUME(ng) % det(I, K),                   &
      &  REAL(PLUME(ng) % detI(I, K)),                                   &
      &  PLUME(ng) % tAm(I, K), PLUME(ng) % sAm(I, K),                   &
@@ -146,6 +146,6 @@ PROGRAM iceplume
   ENDDO
   close(unit=15)
   open(unit=15, file='./outputs/iceplume_dye.txt')
-    write(15, '(99 E30.15E3)') PLUME(ng) % trc(I, :)
+    write(15, '(99 E25.15E3)') PLUME(ng) % trc(I, :)
   close(unit=15)
 END PROGRAM
