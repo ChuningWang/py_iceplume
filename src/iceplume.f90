@@ -124,7 +124,7 @@ PROGRAM iceplume
   write(*, *)  'Writing output to files...'
 !
   open(unit=15, file='./outputs/iceplume_zw.txt')
-  write(15, '(A4, 99 A20)')  'lev', 'zW', 'f', 'w', 'a', 't', 's',      &
+  write(15, '(A4, 99 A30)')  'lev', 'zW', 'f', 'w', 'a', 't', 's',      &
      &                       'mInt', 'rho'
   DO K = 0, Nr
     write(15, '(I4, 99 E30.15E3)')  K, PLUME(ng) % zW(I, K),            &
@@ -135,7 +135,7 @@ PROGRAM iceplume
   ENDDO
   close(unit=15)
   open(unit=15, file='./outputs/iceplume_zr.txt')
-  write(15, '(A4, 99 A20)')  'lev', 'zR', 'ent', 'det', 'detI', 'tAm',  &
+  write(15, '(A4, 99 A30)')  'lev', 'zR', 'ent', 'det', 'detI', 'tAm',  &
      &                       'sAm', 'm', 'rhoAm'
   DO K = 1, Nr
     write(15, '(I4, 99 E30.15E3)')  K, PLUME(ng) % zR(I, K),            &
