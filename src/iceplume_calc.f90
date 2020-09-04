@@ -94,26 +94,24 @@ SUBROUTINE ICEPLUME_CALC(ng, I,                                         &
 !                                                                   !
 ! ==================================================================!
 !
-! Initiate
+! Initialize and prepare profiles
 !
   plumeDepthK = iceDepthK+1
   det = 0.0
 !
-  PLUME(ng) % f(I, 0)    = 0.0
-  PLUME(ng) % w(I, 0)    = 0.0
-  PLUME(ng) % t(I, 0)    = 0.0
-  PLUME(ng) % s(I, 0)    = 0.0
-  PLUME(ng) % a(I, 0)    = 0.0
-  PLUME(ng) % mInt(I, 0) = 0.0
-!
-  DO k = 1, N(ng)
+  DO k = 0, N(ng)
     PLUME(ng) % f(I, K)    = 0.0
     PLUME(ng) % w(I, K)    = 0.0
     PLUME(ng) % t(I, K)    = 0.0
     PLUME(ng) % s(I, K)    = 0.0
     PLUME(ng) % a(I, K)    = 0.0
     PLUME(ng) % mInt(I, K) = 0.0
+    PLUME(ng) % rho(I, K)  = 0.0
+    PLUME(ng) % lm(I, K)   = 0.0
+    PLUME(ng) % lc(I, K)   = 0.0
+  ENDDO
 !
+  DO k = 1, N(ng)
     PLUME(ng) % ent(I, K) = 0.0
     PLUME(ng) % det(I, K) = 0.0
 !
@@ -122,67 +120,69 @@ SUBROUTINE ICEPLUME_CALC(ng, I,                                         &
   ENDDO
 !
   IF (fIni .GT. 0.0) THEN
+    IF (sgTyp .NE. 1) THEN
 !
 ! Run the plume model
 !
-    CALL ICEPLUME_ENTRAIN(ng, I, iceDepthK,                             &
-     &                    fIni, tIni, sIni,                             &
-     &                    sgTyp, sgLen)
+      CALL ICEPLUME_ENTRAIN(ng, I, iceDepthK,                           &
+     &                      fIni, tIni, sIni,                           &
+     &                      sgTyp, sgLen)
 !
 ! Calculate volume flux differential to give entrainment / extrainment
 ! First clear ent / det
 !
-    DO K = iceDepthK+1, N(ng)
-      PLUME(ng) % ent(I, K) =                                           &
-     &    -(PLUME(ng) % f(I, K) - PLUME(ng) % f(I, K-1))
-      PLUME(ng) % ent(I, K) = PLUME(ng) % ent(I, K) +                   &
-     &    MAX(PLUME(ng) % mInt(I, K) -                                  &
-     &        PLUME(ng) % mInt(I, K-1), 0.0)
-      PLUME(ng) % ent(I, K) = MIN(PLUME(ng) % ent(I, K), 0.0)
-    ENDDO
+      DO K = iceDepthK+1, N(ng)
+        PLUME(ng) % ent(I, K) =                                         &
+     &      -(PLUME(ng) % f(I, K) - PLUME(ng) % f(I, K-1))
+        PLUME(ng) % ent(I, K) = PLUME(ng) % ent(I, K) +                 &
+     &      MAX(PLUME(ng) % mInt(I, K) -                                &
+     &          PLUME(ng) % mInt(I, K-1), 0.0)
+        PLUME(ng) % ent(I, K) = MIN(PLUME(ng) % ent(I, K), 0.0)
+      ENDDO
 !
 ! Separate entrainment / detrainment
 !
-    DO K = iceDepthK+1, N(ng)
-      IF (PLUME(ng) % f(I, K) .GT. 0.0) THEN
-        osDepthK = K
-        det = PLUME(ng) % f(I, K)
-      ENDIF
-    ENDDO
+      DO K = iceDepthK+1, N(ng)
+        IF (PLUME(ng) % f(I, K) .GT. 0.0) THEN
+          osDepthK = K
+          det = PLUME(ng) % f(I, K)
+        ENDIF
+      ENDDO
 !
 ! Replace the last value of lc and lm
 !
-    PLUME(ng) % lm(I, osDepthK) = PLUME(ng) % lm(I, osDepthK-1)
-    PLUME(ng) % lc(I, osDepthK) = PLUME(ng) % lc(I, osDepthK-1)
+      PLUME(ng) % lm(I, osDepthK) = PLUME(ng) % lm(I, osDepthK-1)
+      PLUME(ng) % lc(I, osDepthK) = PLUME(ng) % lc(I, osDepthK-1)
 !
 ! Find detrainment depth index, Calculate total detrainment volume
 ! and thickness
 !
-    DO K = osDepthK, iceDepthK+1, -1
-      cff = RHO(PLUME(ng) % t(I, osDepthK),                             &
-     &          PLUME(ng) % s(I, osDepthK),                             &
-     &          PLUME(ng) % zR(I, K))
-      IF (K .EQ. 1) THEN
-        cff1 = PLUME(ng) % rhoAm(I, 1)
-        cff2 = 0.5*(PLUME(ng) % rhoAm(I, 1)+                            &
-     &              PLUME(ng) % rhoAm(I, 2))
-      ELSEIF (K .EQ. N(ng)) THEN
-        cff1 = 0.5*(PLUME(ng) % rhoAm(I, N(ng)-1)+                      &
-     &              PLUME(ng) % rhoAm(I, N(ng)))
-        cff2 = PLUME(ng) % rhoAm(I, N(ng))
-      ELSE
-        cff1 = 0.5*(PLUME(ng) % rhoAm(I, K-1)+PLUME(ng) % rhoAm(I, K))
-        cff2 = 0.5*(PLUME(ng) % rhoAm(I, K)+PLUME(ng) % rhoAm(I, K+1))
-      ENDIF
-      IF ((K .EQ. N(ng)) .AND. (cff .LT. cff2)) THEN
-        plumeDepthK = N(ng)
-        EXIT
-      ENDIF
-      IF ((cff .LT. cff1) .AND. (cff .GT. cff2)) THEN
-        plumeDepthK = K
-        EXIT
-      ENDIF
-    ENDDO
+      DO K = osDepthK, iceDepthK+1, -1
+        cff = RHO(PLUME(ng) % t(I, osDepthK),                           &
+     &            PLUME(ng) % s(I, osDepthK),                           &
+     &            PLUME(ng) % zR(I, K))
+        IF (K .EQ. 1) THEN
+          cff1 = PLUME(ng) % rhoAm(I, 1)
+          cff2 = 0.5*(PLUME(ng) % rhoAm(I, 1)+                          &
+     &                PLUME(ng) % rhoAm(I, 2))
+        ELSEIF (K .EQ. N(ng)) THEN
+          cff1 = 0.5*(PLUME(ng) % rhoAm(I, N(ng)-1)+                    &
+     &                PLUME(ng) % rhoAm(I, N(ng)))
+          cff2 = PLUME(ng) % rhoAm(I, N(ng))
+        ELSE
+          cff1 = 0.5*(PLUME(ng) % rhoAm(I, K-1)+PLUME(ng) % rhoAm(I, K))
+          cff2 = 0.5*(PLUME(ng) % rhoAm(I, K)+PLUME(ng) % rhoAm(I, K+1))
+        ENDIF
+        IF ((K .EQ. N(ng)) .AND. (cff .LT. cff2)) THEN
+          plumeDepthK = N(ng)
+          EXIT
+        ENDIF
+        IF ((cff .LT. cff1) .AND. (cff .GT. cff2)) THEN
+          plumeDepthK = K
+          EXIT
+        ENDIF
+      ENDDO
+    ENDIF
   ENDIF
 !
 ! ==================================================================!
@@ -301,36 +301,12 @@ SUBROUTINE ICEPLUME_CALC(ng, I,                                         &
     DO itrc = 3, NT(ng)
       PLUME(ng) % trc(I, itrc) = PLUME(ng) % trcCum(I, itrc) / det
     ENDDO
-!
-! If use melt water tracer, rewrite tracer concentration
-! Calculate accumulated trcer amount from base to detrain depth
-!
-    PLUME(ng) % trcCum(I, NT(ng)-1) = 0.0
-    PLUME(ng) % trcCum(I, NT(ng)  ) = 0.0
-    DO K = iceDepthK+1, osDepthK
-      PLUME(ng) % trcCum(I, NT(ng)-1) =                                 &
-     &    PLUME(ng) % trcCum(I, NT(ng)-1) +                             &
-     &    (-PLUME(ng) % ent(I, K)*PLUME(ng) % trcAm(I, K, NT(ng)-1)) +  &
-     &    PLUME(ng) % m(I, K)*PLUME(ng) % trcIni(I, NT(ng)-1)
-      PLUME(ng) % trcCum(I, NT(ng)  ) =                                 &
-     &    PLUME(ng) % trcCum(I, NT(ng)  ) +                             &
-     &    (-PLUME(ng) % ent(I, K)*PLUME(ng) % trcAm(I, K, NT(ng)  ))
-    ENDDO
-!
-! Calculate tracer concentration
-!
-    PLUME(ng) % trc(I, NT(ng)-1) = PLUME(ng) % trcCum(I, NT(ng)-1)/det
-    PLUME(ng) % trc(I, NT(ng)  ) = PLUME(ng) % trcCum(I, NT(ng)  )/det
   ENDIF
 !
 ! Rewrite tracer concentration in background melt water 
 !
   PLUME(ng) % trcB(I, itemp) = (cI*tIce - L)/cW
   PLUME(ng) % trcB(I, isalt) = sIce
-!
-! If use melt water tracer, rewrite the last tracer type.
-!
-  PLUME(ng) % trcB(I, NT(ng)) = PLUME(ng) % trcIni(I, NT(ng))
 !
 ! ==================================================================!
 !                                                                   !
