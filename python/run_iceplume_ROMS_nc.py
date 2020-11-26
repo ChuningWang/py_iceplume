@@ -309,7 +309,10 @@ for i, ti in enumerate(trange):
                              ]), roms_input['sgdye'][ti, :, ri])), fmt='%30.15e')
 
         # ------------ run the executable --------------------------------------
-        subprocess.call('cd ..; ./iceplume_test.exe', shell=True)
+        if (i==0) & (j==0):
+            subprocess.call('cd ..; ./iceplume_test.exe 1', shell=True)
+        else:
+            subprocess.call('cd ..; ./iceplume_test.exe 0', shell=True)
 
         # ------------ load results from txt files -----------------------------
         data_zr = np.loadtxt('../outputs/iceplume_zr.txt', skiprows=1)

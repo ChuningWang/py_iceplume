@@ -58,7 +58,7 @@ np.savetxt('../inputs/iceplume_scalar.txt',
                    sg_runoff, sg_temp, sg_salt, sg_dye]]), fmt='%30.15e')
 
 subprocess.call('cd ..;. ./build.bash', shell=True)
-subprocess.call('cd ..; ./iceplume_test.exe', shell=True)
+subprocess.call('cd ..; ./iceplume_test.exe 1', shell=True)
 
 data_zr = np.loadtxt('../outputs/iceplume_zr.txt', skiprows=1)
 data_zw = np.loadtxt('../outputs/iceplume_zw.txt', skiprows=1)

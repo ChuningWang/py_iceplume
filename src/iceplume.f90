@@ -13,6 +13,7 @@ PROGRAM iceplume
   real(r8) :: sgTyp, sgDep, sgLen
   real(r8) :: RHO
   real(r8) :: cff
+  character(1) :: verbal
 !
 ! Local variable declarations.
 !
@@ -22,13 +23,16 @@ PROGRAM iceplume
 ! Write header information
 ! ==================================================================
 !
-  write(*, *)  ''
-  write(*, *)  '==================================================='
-  write(*, *)  'ICEPLUME Stand-alone Version'
-  write(*, *)  'v1.0'
-  write(*, *)  'Chuning Wang, chuning@marine.rutgers.edu'
-  write(*, *)  '==================================================='
-  write(*, *)  ''
+  CALL get_command_argument(1, verbal)
+  IF (verbal .eq. '1') THEN
+    write(*, *)  ''
+    write(*, *)  '================================================='
+    write(*, *)  'ICEPLUME Stand-alone Version'
+    write(*, *)  'v1.0.0'
+    write(*, *)  'Chuning Wang, chuning@marine.rutgers.edu'
+    write(*, *)  '================================================='
+    write(*, *)  ''
+  ENDIF
 !
 ! ==================================================================
 ! Read in some scalar parameters
@@ -52,7 +56,9 @@ PROGRAM iceplume
 ! Read in profiles from OCEAN.
 ! ==================================================================
 !
-  write(*, *)  'Reading input data...'
+  IF (verbal .eq. '1') THEN
+    write(*, *)  'Reading input data...'
+  ENDIF
 !
 ! zw
 !
@@ -112,7 +118,9 @@ PROGRAM iceplume
 ! Call main function
 ! ==================================================================
 !
-  write(*, *)  'Calculating ICEPLUME...'
+  IF (verbal .eq. '1') THEN
+    write(*, *)  'Calculating ICEPLUME...'
+  ENDIF
 !
   CALL ICEPLUME_CALC(ng, I, fIni, tIni, sIni,                           &
      &               NINT(sgTyp), sgDep, sgLen)
@@ -121,7 +129,9 @@ PROGRAM iceplume
 ! Write to file
 ! ==================================================================
 !
-  write(*, *)  'Writing output to files...'
+  IF (verbal .eq. '1') THEN
+    write(*, *)  'Writing output to files...'
+  ENDIF
 !
   open(unit=15, file='./outputs/iceplume_zw.txt')
   write(15, '(A4, 99 A25)')  'lev', 'zW', 'f', 'w', 'a', 't', 's',      &
