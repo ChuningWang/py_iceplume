@@ -27,7 +27,7 @@ PROGRAM iceplume
   IF (verbal .eq. '1') THEN
     write(*, *)  ''
     write(*, *)  '================================================='
-    write(*, *)  'ICEPLUME Stand-alone Version'
+    write(*, *)  'ICEPLUME Offline Version'
     write(*, *)  'v1.0.0'
     write(*, *)  'Chuning Wang, chuning@marine.rutgers.edu'
     write(*, *)  '================================================='
