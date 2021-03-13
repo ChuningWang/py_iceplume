@@ -2,7 +2,7 @@
 ! ==================================================================!
 !                                                                   !
 ! This subroutine call the iceplume core functions to calcualte     !
-! plume status/meltr ates/etc.                                      !
+! plume status/melt rates/etc.                                      !
 !                                                                   !
 ! ==================================================================!
 !
@@ -317,6 +317,7 @@ SUBROUTINE ICEPLUME_CALC(ng, I,                                         &
 ! If use melt water tracer, rewrite tracer concentration
 ! Calculate accumulated trcer amount from base to detrain depth
 !
+IF ( NT(ng) .GE. 3 ) THEN
     PLUME(ng) % trcCum(I, NT(ng)-1) = 0.0
     PLUME(ng) % trcCum(I, NT(ng)  ) = 0.0
     DO K = iceDepthK+1, osDepthK
@@ -333,6 +334,7 @@ SUBROUTINE ICEPLUME_CALC(ng, I,                                         &
 !
     PLUME(ng) % trc(I, NT(ng)-1) = PLUME(ng) % trcCum(I, NT(ng)-1)/det
     PLUME(ng) % trc(I, NT(ng)  ) = PLUME(ng) % trcCum(I, NT(ng)  )/det
+ENDIF
   ENDIF
 !
 ! Rewrite tracer concentration in background melt water 
@@ -342,7 +344,9 @@ SUBROUTINE ICEPLUME_CALC(ng, I,                                         &
 !
 ! If use melt water tracer, rewrite the last tracer type.
 !
+IF ( NT(ng) .GE. 3 ) THEN
   PLUME(ng) % trcB(I, NT(ng)) = PLUME(ng) % trcIni(I, NT(ng))
+ENDIF
 !
 ! Calculate depth integrated volume transport [m3 s-1]
 !
