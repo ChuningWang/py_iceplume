@@ -317,7 +317,7 @@ SUBROUTINE ICEPLUME_CALC(ng, I,                                         &
 ! If use melt water tracer, rewrite tracer concentration
 ! Calculate accumulated trcer amount from base to detrain depth
 !
-IF ( NT(ng) .GE. 3 ) THEN
+IF ( NT(ng) .GE. 5 ) THEN
     PLUME(ng) % trcCum(I, NT(ng)-1) = 0.0
     PLUME(ng) % trcCum(I, NT(ng)  ) = 0.0
     DO K = iceDepthK+1, osDepthK
@@ -344,7 +344,7 @@ ENDIF
 !
 ! If use melt water tracer, rewrite the last tracer type.
 !
-IF ( NT(ng) .GE. 3 ) THEN
+IF ( NT(ng) .GE. 5 ) THEN
   PLUME(ng) % trcB(I, NT(ng)) = PLUME(ng) % trcIni(I, NT(ng))
 ENDIF
 !
