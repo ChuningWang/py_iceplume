@@ -1,15 +1,9 @@
 # -------------- import modules --------------------------------
-from datetime import datetime, timedelta
 import subprocess
 import pickle
-
 import numpy as np
-import matplotlib.pyplot as plt
 import netCDF4 as nc
-
 import pyroms
-from cmocean import cm
-import gsw
 
 # -------------- functionals --------------------------------
 def get_zr(zeta, h, vgrid):
