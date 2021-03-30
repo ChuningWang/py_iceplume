@@ -1,11 +1,11 @@
-# -------------- import modules --------------------------------
+# -------------- import modules ----------------------------------------
 import subprocess
 import pickle
 import numpy as np
 import netCDF4 as nc
 import pyroms
 
-# -------------- functionals --------------------------------
+# -------------- functionals -------------------------------------------
 def get_zr(zeta, h, vgrid):
     """ get z at rho points from grid and zeta info. """
 
@@ -55,8 +55,8 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
         ntracer = ntracer_raw
     N = len(fh.dimensions['s_rho'])
 
-    epos = fh_river.variables['river_Eposition'][:]
     xpos = fh_river.variables['river_Xposition'][:]
+    epos = fh_river.variables['river_Eposition'][:]
     rdir = fh_river.variables['river_direction'][:]
     sgdep = fh_river.variables['subglacial_depth'][:]
     sgtyp = fh_river.variables['subglacial_type'][:]
@@ -80,7 +80,7 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
     dt = np.diff(time).mean()
 
     ntime = len(time)
-    nriver = len(epos)
+    nriver = len(xpos)
 
     sgtrs = np.ma.zeros((ntime, nriver))
     sgtemp = np.ma.zeros((ntime, nriver))
@@ -88,8 +88,8 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
     sgdye = np.ma.zeros((ntime, ntracer, nriver))
 
     mask_rho = grd.hgrid.mask_rho
-    epos_rho = np.zeros(nriver).astype('int')
     xpos_rho = np.zeros(nriver).astype('int')
+    epos_rho = np.zeros(nriver).astype('int')
     rdir2 = np.zeros(nriver)
 
     if tracer1d:
@@ -114,13 +114,13 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
                 for j in range(ntracer):
                     sgdye[:, j, i] = 0
 
-    for i in range(len(epos)):
+    for i in range(len(xpos)):
         if rdir[i] == 0:
-            if ((mask_rho[epos[i], xpos[i]] == 0) & (mask_rho[epos[i]-1, xpos[i]] == 1)):
+            if   ((mask_rho[epos[i], xpos[i]] == 0) & (mask_rho[epos[i], xpos[i]-1] == 1)):
                 epos_rho[i] = int(epos[i]-1)
                 xpos_rho[i] = int(xpos[i])
                 rdir2[i] = -1
-            if ((mask_rho[epos[i], xpos[i]] == 1) & (mask_rho[epos[i]-1, xpos[i]] == 0)):
+            elif ((mask_rho[epos[i], xpos[i]] == 1) & (mask_rho[epos[i], xpos[i]-1] == 0)):
                 epos_rho[i] = int(epos[i])
                 xpos_rho[i] = int(xpos[i])
                 rdir2[i] = 1
@@ -129,11 +129,11 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
                 xpos_rho[i] = int(xpos[i])
                 rdir2[i] = 0
         if rdir[i] == 1:
-            if ((mask_rho[epos[i], xpos[i]] == 0) & (mask_rho[epos[i], xpos[i]-1] == 1)):
+            if   ((mask_rho[epos[i], xpos[i]] == 0) & (mask_rho[epos[i]-1, xpos[i]] == 1)):
                 epos_rho[i] = int(epos[i])
                 xpos_rho[i] = int(xpos[i]-1)
                 rdir2[i] = -1
-            if ((mask_rho[epos[i], xpos[i]] == 1) & (mask_rho[epos[i], xpos[i]-1] == 0)):
+            elif ((mask_rho[epos[i], xpos[i]] == 1) & (mask_rho[epos[i]-1, xpos[i]] == 0)):
                 epos_rho[i] = int(epos[i])
                 xpos_rho[i] = int(xpos[i])
                 rdir2[i] = 1
@@ -224,8 +224,8 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
     roms_input['zr'] = zr
     roms_input['zw'] = zw
 
-    roms_input['epos'] = epos
     roms_input['xpos'] = xpos
+    roms_input['epos'] = epos
     roms_input['rdir'] = rdir
     roms_input['sgdep'] = sgdep
     roms_input['sgtyp'] = sgtyp
@@ -252,7 +252,7 @@ def make_input(roms_his_file, roms_river_file, roms_grid_file, tracer1d=True, us
     return roms_input
 
 
-# -------------- generate inputs --------------------------------
+# -------------- generate inputs ---------------------------------------
 app         = 'fjord_ks_luv'
 hist_file   = '/Users/cw686/roms_outputs/' + app + '/outputs/fjord_avg.nc'
 grid_file   = '/Users/cw686/roms_archive/' + app + '/fjord_grid.nc'
@@ -264,7 +264,7 @@ roms_input  = make_input(hist_file, river_file, grid_file, tracer1d=tracer1d, us
 # ------------ build the executable ------------------------------------
 subprocess.call('cd ..;. ./build.bash', shell=True)
 
-# ------------ build input file and run --------------------------------------
+# ------------ build input file and run --------------------------------
 trange  = range(roms_input['ntime'])
 irange  = range(roms_input['nriver'])
 
@@ -275,8 +275,8 @@ ntracer = roms_input['ntracer']
 
 iceplume_out          = {}
 iceplume_out['time']  = roms_input['time'][trange]
-iceplume_out['epos']  = roms_input['epos'][irange]
 iceplume_out['xpos']  = roms_input['xpos'][irange]
+iceplume_out['epos']  = roms_input['epos'][irange]
 iceplume_out['zw']    = np.zeros((ntime, N+1, nriver))
 iceplume_out['f']     = np.zeros((ntime, N+1, nriver))
 iceplume_out['w']     = np.zeros((ntime, N+1, nriver))
@@ -321,13 +321,13 @@ for i, ti in enumerate(trange):
                               roms_input['sgsalt'][ti, ri]
                              ]), roms_input['sgdye'][ti, :, ri])), fmt='%30.15e')
 
-        # ------------ run the executable --------------------------------------
+# ------------ run the executable --------------------------------------
         if (i==0) & (j==0):
             subprocess.call('cd ..; ./iceplume_test.exe 1', shell=True)
         else:
             subprocess.call('cd ..; ./iceplume_test.exe 0', shell=True)
 
-        # ------------ load results from txt files -----------------------------
+# ------------ load results from txt files -----------------------------
         data_zr = np.loadtxt('../outputs/iceplume_zr.txt', skiprows=1)
         data_zw = np.loadtxt('../outputs/iceplume_zw.txt', skiprows=1)
         data_dye = np.loadtxt('../outputs/iceplume_dye.txt')
@@ -352,5 +352,5 @@ for i, ti in enumerate(trange):
 
         iceplume_out['dye'][i, :, j]   = data_dye[2:]
 
-# --------------------- save outputs ----------------------
+# --------------------- save outputs -----------------------------------
 pickle.dump(iceplume_out, open('./py_iceplume.pickle', 'wb'))
